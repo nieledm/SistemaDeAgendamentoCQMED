@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento CQMED</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="login-card">
+        <img src="/static/images/cqmed_logo.png" 
+            alt="CQMED" 
+            style="max-width: 180px; margin-bottom: 20px; display: inline-block;">
+        <h2 style="color: var(--cqmed-teal-main);">Acesso Externo</h2>
+        <p >
+            Para pesquisadores e colaboradores sem conta de rede CQMED/UNICAMP.
+        </p>
+        <form id="loginExternoForm">
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>E-mail Institucional ou Pessoal</label>
+                <input type="email" id="email" placeholder="exemplo@email.com" required>
+            </div>
+            <button type="submit" class="btn-login" style="background-color: #6c757d;">Acessar Sistema</button>
+            <div id="error" class="error-msg">Erro ao processar login.</div>
+        </form>
+        <p><a href="/" style="color: #7f8c8d; font-size: 0.8rem; text-decoration: none;">← Voltar ao início</a></p>
+    </div>
+
+    <script src="/static/js/login.js?v=<?php echo time(); ?"></script>
+    <script>
+        // Chama a mesma função que criamos no login.js, mas com o tipo 'externo'
+        document.getElementById('loginExternoForm').onsubmit = (e) => realizarLogin(e, 'externo');
+    </script>
+</body>
+</html>

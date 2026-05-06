@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento CQMED</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div> <strong id="userNameDisplay"></strong> | <a href="/">Sair</a></div>
+            </div>
+            <div class="sidebar-menu" id="listaEquipamentos">
+                </div>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h2 id="tituloEquipamento">Selecione um equipamento</h2>
+                <img src="/static/images/cqmed_logo.png" 
+                        alt="Logo CQMED" 
+                        style="height: 45px; object-fit: contain;">
+            </div>
+            <div id="calendar-container">
+                <div id="calendar"></div>
+            </div>
+            <!-- Painel de Gestão do Administrador -->
+            <div id="painelAdmin" style="display: none; padding: 0px;">
+                <h2 style="color: var(--cqmed-teal-main);">🛡️ Painel de Controle Geral</h2>
+                
+                <!-- Navegação por Abas -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                    <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button>
+                </div>
+
+                <!-- Aba 1: Gestão de Equipamentos -->
+                <div id="abaEquipamentos" class="conteudo-aba">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Gerenciar Inventário</h3>
+                        <button class="btn-novo-equipamento" onclick="abrirModalEquipamento()">+ Novo Equipamento</button>
+                    </div>
+                    <div class="tabela-container">
+                        <table class="tabela-gestao">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Responsável</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAdminEquipamentos"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Aba 2: Usuários Externos e Validade -->
+                <div id="abaUsuarios" class="conteudo-aba" style="display: none;">
+                    <h3>Controle de Acesso Externo</h3>
+                    <div class="tabela-container">
+                        <table class="tabela-gestao">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Validade do Acesso</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAdminUsuarios"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+           <!-- <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;"> -->
+            <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;">
+                <button onclick="voltarAoCalendario()" class="btn-voltar">
+                    ← Voltar ao Calendário
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modalForm">
+        <div class="modal-content">
+            <div style="text-align: right;">
+                <button type="button" onclick="fecharModal()"
+                        title="Fechar" 
+                        style="background:rgb(201, 198, 198);
+                               border: 2px solid black;
+                               font-weight: bold; 
+                               cursor: pointer;">
+                    X
+                </button>
+            </div>
+
+            <h3>Novo Agendamento</h3>
+            <form id="agendamentoForm">
+                <!-- Para criar transformar o botão confirmar em editar quando clicar em um bloco existente de agendamento -->
+                <input type="hidden" id="editScheduleId"> 
+                
+                <input type="hidden" id="eqId">
+                <div class="form-group">
+                    <label>Início (Data e Hora)</label>
+                    <input type="datetime-local" id="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label>Fim (Data e Hora)</label>
+                    <input type="datetime-local" id="endTime" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit"
+                            id="btnConfirmar" 
+                            class="btn-login">
+                        Confirmar
+                    </button>
+                    <button type="button" 
+                            class="btn-excluir" 
+                            id="btnExcluir" 
+                            onclick="excluirAgendamento()">
+                        Excluir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Edição de Equipamento -->
+    <div id="modalEquipamento" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);">
+        <div class="modal-content" style="background: white; margin: 10% auto; padding: 30px; width: 400px; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main);">
+            <div style="text-align: right;">
+                <button type="button" onclick="fecharModalEquipamento()" title="Fechar" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
+            </div>
+            
+            <h3 style="color: var(--cqmed-teal-main);">Editar Equipamento</h3>
+            
+            <input type="hidden" id="eqEditId">
+            
+            <div class="form-group">
+                <label>Nome do Equipamento</label>
+                <input type="text" id="eqEditNome" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Responsável Pelo Equipamento</label>
+                <select id="eqEditResponsavel" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="">Sem responsável</option>
+                    <!-- Opções preenchidas via JavaScript -->
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button onclick="salvarEdicaoEquipamento()" class="btn-interno" style="width: 100%; padding: 10px;">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js?v={{ version }}"></script>
+</body>
+</html>
