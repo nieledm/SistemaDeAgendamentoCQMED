@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -176,6 +176,28 @@ def login_externo(dados: LoginExternoRequest, db: Session = Depends(database.get
         "is_admin": user.is_admin,
         "is_external": user.is_external
     }
+
+@app.get("/api/verificar-acesso/{user_id}")
+def verificar_acesso(user_id: int, db: Session = Depends(database.get_db)):
+    usuario = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuário não encontrado. Por favor, faça login novamente.")
+
+    # Regra de bloqueio para usuários externos (Pendente ou Expirado)
+    if usuario.is_external:
+        if not usuario.expiration_date:
+            raise HTTPException(
+                status_code=403, 
+                detail="Acesso bloqueado. Seu status está pendente de liberação pelo administrador."
+            )
+        if usuario.expiration_date < datetime.utcnow():
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Acesso expirado. Sua validade encerrou em {usuario.expiration_date.strftime('%d/%m/%Y')}."
+            )
+
+    return {"status": "autorizado"}
 
 ################################################################
 # Atribuir responsável a um equipamento
@@ -376,8 +398,6 @@ def monitorar_reservas(db: Session = Depends(database.get_db)):
 ##############################################################
 # PAINEL DE ADMINISTRAÇÃO - GESTÃO DE USUÁRIOS E EQUIPAMENTOS
 ##############################################################
-from typing import Optional
-from pydantic import BaseModel
 
 # --- ESQUEMAS PYDANTIC (Para validar os dados recebidos do JS) ---
 class EquipamentoCreate(BaseModel):
