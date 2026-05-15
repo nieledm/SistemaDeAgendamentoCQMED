@@ -135,16 +135,41 @@ def editar_agendamento(
     
     return {"msg": "Agendamento atualizado com sucesso", "agendamento": agendamento}
 
+# @router.get("/api/eventos/{equipment_id}")
+# def listar_eventos(equipment_id: int, user_id: int, db: Session = Depends(database.get_db)):
+#     agendamentos = db.query(models.Schedule).filter(
+#         models.Schedule.equipment_id == equipment_id,
+#     ).all()
+#     usuario_logado = db.query(models.User).filter(models.User.id == user_id).first()
+    
+#     usuario_logado = db.query(models.User).filter(models.User.id == user_id).first()
+
+#     eventos = []
+#     for ag in agendamentos:
+#         if not usuario_logado.is_external or ag.user_id == user_id:
+#             label = f" {ag.user.full_name or ag.user.username}"
+#         else:
+#             label = "Horário Reservado"
+            
+#         eventos.append({
+#             "id": ag.id,
+#             "title": label,
+#             "start": ag.start_time,
+#             "end": ag.end_time,
+#             "color": "#7f8c8d" if usuario_logado.is_external and ag.user_id != user_id else "#3498db"
+#         })
+#     return eventos
+
 @router.get("/api/eventos/{equipment_id}")
 def listar_eventos(equipment_id: int, user_id: int, db: Session = Depends(database.get_db)):
-    agendamentos = db.query(models.Schedule).filter(
-        models.Schedule.equipment_id == equipment_id,
-    ).all()
-    usuario_logado = db.query(models.User).filter(models.User.id == user_id).first()
+    agendamentos = db.query(models.Schedule).filter(models.Schedule.equipment_id == equipment_id).all()
+    # BUSCA AS MANUTENÇÕES TAMBÉM:
+    manutencoes = db.query(models.equipment_maintenances).filter(models.equipment_maintenances.equipment_id == equipment_id).all()
     
     usuario_logado = db.query(models.User).filter(models.User.id == user_id).first()
-
     eventos = []
+
+    # Adiciona agendamentos normais
     for ag in agendamentos:
         if not usuario_logado.is_external or ag.user_id == user_id:
             label = f" {ag.user.full_name or ag.user.username}"
@@ -158,4 +183,16 @@ def listar_eventos(equipment_id: int, user_id: int, db: Session = Depends(databa
             "end": ag.end_time,
             "color": "#7f8c8d" if usuario_logado.is_external and ag.user_id != user_id else "#3498db"
         })
+
+    # ADICIONA AS MANUTENÇÕES COM COR DIFERENTE (VERMELHO)
+    for mt in manutencoes:
+        eventos.append({
+            "id": f"maint_{mt.id}",
+            "title": f"MANUTENÇÃO: {mt.description or ''}",
+            "start": mt.start_time,
+            "end": mt.end_time,
+            "color": "#e74c3c", # Vermelho
+            "rendering": "background"
+        })
+
     return eventos

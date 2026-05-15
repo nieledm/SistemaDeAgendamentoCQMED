@@ -60,6 +60,11 @@ class EquipamentoUpdate(BaseModel):
     name: str
     responsible_id: Optional[int] = None
 
+class MaintenanceCreate(BaseModel):
+    equipment_id: int
+    start_time: datetime
+    end_time: datetime
+    description: Optional[str] = None
 
 # ----- ADMIN -----
 class PermissionResponse(BaseModel):

@@ -319,3 +319,8 @@
 .btn-novo-equipamento:hover{
     background-color: #004494; 
 }
+
+/* Adicione ao final do dashboard.css */
+.main-content {
+    overflow: visible !important;
+}

@@ -36,6 +36,7 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
                     <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
                     <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button>
                 </div>
 
                 <!-- Aba 1: Gestão de Equipamentos -->
@@ -76,6 +77,59 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Aba 3: Manutenção -->
+
+                <div id="abaManutencao" class="conteudo-aba" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start;">
+                        <!-- Coluna do Formulário -->
+                        <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                            <form id="formMaintAdmin" onsubmit="salvarManutencao(event)">
+                                <div class="form-group">
+                                    <label>Equipamento para manutenção</label>
+                                    <select id="maintEquipamentoId" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Início do Bloqueio</label>
+                                    <input type="datetime-local" id="maintStartTime" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fim do Bloqueio</label>
+                                    <input type="datetime-local" id="maintEndTime" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Motivo/Descrição</label>
+                                    <input type="text" id="maintDescription" placeholder="Ex: Calibração ou troca de peça" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                </div>
+                                <button type="submit" style="width: 100%; background-color: #e74c3c; padding: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px;">
+                                    Aplicar Bloqueio
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Coluna da Tabela -->
+                        <div>
+                            <h3 style="margin-top: 0;">Equipamentos Atualmente Bloqueados</h3>
+                            <div class="tabela-container" style="max-height: 400px; overflow-y: auto;">
+                                <table class="tabela-gestao">
+                                    <thead>
+                                        <tr>
+                                            <th>Equipamento</th>
+                                            <th>Início</th>
+                                            <th>Fim</th>
+                                            <th>Descrição</th>
+                                            <th>Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaAdminManutencoes">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             
            <!-- <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;"> -->

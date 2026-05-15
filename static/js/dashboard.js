@@ -261,16 +261,59 @@ function abrirGestaoAdmin() {
     carregarDadosUsuariosExternos();
 }
 
+// function mudarAbaAdmin(aba) {
+//     document.querySelectorAll('.conteudo-aba').forEach(el => el.style.display = 'none');
+//     document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
+    
+//     if (aba === 'equipamentos') {
+//         document.getElementById('abaEquipamentos').style.display = 'flex';
+//         event.target.classList.add('active'); // Destaca a aba clicada
+//     } else if (aba === 'usuarios') {
+//         document.getElementById('abaUsuarios').style.display = 'flex';
+//         event.target.classList.add('active'); // Destaca a aba clicada
+//     } else if (aba === 'manutencao') {
+//         document.getElementById('abaManutencao').style.display = 'flex';
+//         event.target.classList.add('active'); // Destaca a aba clicada
+//     }
+// }
+
 function mudarAbaAdmin(aba) {
-    document.querySelectorAll('.conteudo-aba').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
+    // Esconde todas as abas e apaga os botões ativos
+    document.getElementById('abaEquipamentos').style.display = 'none';
+    document.getElementById('abaUsuarios').style.display = 'none';
+    document.getElementById('abaManutencao').style.display = 'none';
+
+    document.getElementById('aba' + aba.charAt(0).toUpperCase() + aba.slice(1)).style.display = 'block';
+    // document.querySelectorAll('.conteudo-aba').forEach(el => el.style.display = 'none');
+    // document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
+    
+    const painelAdmin = document.getElementById('painelAdmin');
+    const abaManutencao = document.getElementById('abaManutencao');
+
+    // Destaca o botão da aba que foi clicada
+    if (event && event.target) {
+        event.target.classList.add('active'); 
+    }
     
     if (aba === 'equipamentos') {
         document.getElementById('abaEquipamentos').style.display = 'flex';
-        event.target.classList.add('active'); // Destaca a aba clicada
-    } else {
+        
+        carregarDadosEquipamentosAdmin(); 
+        
+    } else if (aba === 'usuarios') {
         document.getElementById('abaUsuarios').style.display = 'flex';
-        event.target.classList.add('active'); // Destaca a aba clicada
+        
+        carregarDadosUsuariosExternos();
+        
+    } else if (aba === 'manutencao') {
+        document.getElementById('abaManutencao').style.display = 'flex';
+        painelAdmin.style.height = (window.innerHeight - 70) + 'px';
+        painelAdmin.style.overflowY = 'scroll';
+        painelAdmin.style.display = 'block';
+        abaManutencao.style.overflow = 'visible';
+        
+        carregarSelectEquipamentosManutencao();
+        carregarTabelaManutencoes();
     }
 }
 
@@ -517,6 +560,146 @@ async function verificarSessao() {
     }
 }
 
+// -----------------------------------------------------------------------------
+// FUNÇÕES DA ABA: MANUTENÇÃO
+// -----------------------------------------------------------------------------
+
+async function carregarSelectEquipamentosManutencao() {
+    try {
+        const response = await fetch('/api/equipamentos'); // Certifique-se de usar a sua rota existente que lista equipamentos
+        const equipamentos = await response.json();
+        
+        const select = document.getElementById('maintEquipamentoId');
+        select.innerHTML = '<option value="">Selecione um equipamento...</option>';
+        
+        equipamentos.forEach(eq => {
+            const option = document.createElement('option');
+            option.value = eq.id;
+            option.textContent = eq.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar equipamentos para o select:", error);
+    }
+}
+
+// 2. Envia os dados do formulário para a API de manutenção
+async function salvarManutencao(event) {
+    event.preventDefault();
+
+    const dados = {
+        equipment_id: parseInt(document.getElementById('maintEquipamentoId').value),
+        start_time: document.getElementById('maintStartTime').value,
+        end_time: document.getElementById('maintEndTime').value,
+        description: document.getElementById('maintDescription').value
+    };
+
+    try {
+        const response = await fetch('/api/admin/manutencao', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert(resultado.msg || "Manutenção programada com sucesso!");
+            document.getElementById('formMaintAdmin').reset();
+            
+            // Recarrega a tabela de manutenções e atualiza o calendário em segundo plano
+            carregarTabelaManutencoes();
+            if (typeof calendar !== 'undefined') calendar.refetchEvents();
+        } else {
+            alert("Erro: " + resultado.detail);
+        }
+    } catch (error) {
+        console.error("Erro ao salvar manutenção:", error);
+        alert("Erro ao conectar com o servidor.");
+    }
+}
+
+// 3. Busca e lista todas as manutenções ativas na tabela do painel
+async function carregarTabelaManutencoes() {
+    const tbody = document.getElementById('tabelaAdminManutencoes');
+    tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+
+    try {
+        // Como a rota criada puxa por ID, podemos criar uma rota genérica ou iterar. 
+        // Para simplificar, buscamos direto do equipamento selecionado no select ou criamos um endpoint geral.
+        // Se quiser listar de TODOS, o ideal é usar uma rota que liste globalmente.
+        // Aqui vamos buscar da rota genérica (caso queira ajustar no main.py depois para listar todas sem ID)
+        const equipId = document.getElementById('maintEquipamentoId').value;
+        if (!equipId) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#777;">Selecione um equipamento para ver o histórico ou gerenciar.</td></tr>';
+            return;
+        }
+
+        const response = await fetch(`/api/manutencoes/${equipId}`);
+        const manutencoes = await response.json();
+
+        tbody.innerHTML = '';
+
+        if (manutencoes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma manutenção agendada para este equipamento.</td></tr>';
+            return;
+        }
+
+        manutencoes.forEach(mt => {
+            const dataInicio = new Date(mt.start_time).toLocaleString('pt-BR');
+            const dataFim = new Date(mt.end_time).toLocaleString('pt-BR');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>Equipamento ID: ${mt.equipment_id}</strong></td>
+                <td>${dataInicio}</td>
+                <td>${dataFim}</td>
+                <td>${mt.description || '-'}</td>
+                <td>
+                    <button class="btn-excluir" onclick="deletarManutencao(${mt.id})" style="padding: 4px 8px; font-size: 12px;">
+                        Remover
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar tabela de manutenções:", error);
+        tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar dados.</td></tr>';
+    }
+}
+
+// Extra: Adiciona um listener para atualizar a tabela assim que o admin mudar o equipamento no select
+document.addEventListener('DOMContentLoaded', () => {
+    const selectMaint = document.getElementById('maintEquipamentoId');
+    if (selectMaint) {
+        selectMaint.addEventListener('change', carregarTabelaManutencoes);
+    }
+});
+
+// 4. Deleta uma manutenção e libera o equipamento de volta no calendário
+async function deletarManutencao(id) {
+    if (!confirm("Tem certeza que deseja encerrar/remover esta manutenção? O horário voltará a ficar disponível.")) return;
+
+    try {
+        const response = await fetch(`/api/admin/manutencao/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            alert("Manutenção removida!");
+            carregarTabelaManutencoes();
+            if (typeof calendar !== 'undefined') calendar.refetchEvents(); // Recarrega o FullCalendar na tela
+        } else {
+            alert("Erro ao remover manutenção.");
+        }
+    } catch (error) {
+        console.error("Erro:", error);
+    }
+}
+
 // Inicialização segura da página
 async function montarPagina() {
     // Para a execução de todo o resto se a sessão for inválida
@@ -528,10 +711,5 @@ async function montarPagina() {
     await carregarMenu(); 
     console.log("Sistema em modo de acesso seguro. Autenticado.");
 }
-
-// async function montarPagina() {
-//     await carregarMenu(); 
-//     console.log("Sistema em modo de acesso aberto.");
-// }
 
 montarPagina();
