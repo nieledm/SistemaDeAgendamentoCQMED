@@ -1,25 +1,47 @@
-from ldap3 import Server, Connection, ALL, SIMPLE
+import os
+import ssl
+from ldap3 import Server, Connection, ALL, SIMPLE, Tls
+
+# Se for rodar fora do Docker, descomente as linhas abaixo para carregar o .env
+# from dotenv import load_dotenv
+# load_dotenv()
 
 def autenticar_e_obter_info(username, password):
-    LDAP_SERVER = '177.220.86.20'
-    
-    USER_DN = fr"CQMED\{username}" 
+    # Puxa as variáveis de ambiente, com valores padrão como fallback (opcional)
+    LDAP_SERVER = os.getenv('LDAP_SERVER')
+    LDAP_DOMAIN = os.getenv('LDAP_DOMAIN')
+    SEARCH_BASE = os.getenv('LDAP_SEARCH_BASE')
+
+    if not all([LDAP_SERVER, LDAP_DOMAIN, SEARCH_BASE]):
+        print("Erro: Variáveis de ambiente do LDAP não configuradas corretamente.")
+        return None
+
+    USER_DN = fr"{LDAP_DOMAIN}\{username}" 
+
+    tls_configuration = Tls(validate=ssl.CERT_NONE, version=ssl.PROTOCOL_TLSv1_2)
 
     try:
-        server = Server(LDAP_SERVER, get_info=ALL)
+        # 
+        server = Server(
+            LDAP_SERVER, 
+            port=636, 
+            use_ssl=True, 
+            tls=tls_configuration, 
+            get_info=ALL
+        )
+
         conn = Connection(server, user=USER_DN, password=password, authentication=SIMPLE)
         
         if conn.bind():
-            # Busca os grupos (memberOf) e o nome exibido
+            # Busca os grupos (memberOf) e o nome exibido usando a variável de ambiente
             conn.search(
-                search_base='dc=cqmed,dc=unicamp,dc=br', 
+                search_base=SEARCH_BASE, 
                 search_filter=f'(sAMAccountName={username})',
                 attributes=['memberOf', 'displayName']
             )
             
             if conn.entries:
                 entry = conn.entries[0]
-                # memberOf vem como uma lista de strings (DNs dos grupos)
                 grupos = entry.memberOf.values if 'memberOf' in entry else []
                 nome = str(entry.displayName) if 'displayName' in entry else username
                 conn.unbind()

@@ -393,28 +393,6 @@ async function salvarEdicaoEquipamento() {
     }
 }
 
-
-// async function carregarDadosEquipamentosAdmin() {
-//     try {
-//         const res = await fetch('/api/admin/equipamentos');
-//         const equipamentos = await res.json();
-//         const tabela = document.getElementById('tabelaAdminEquipamentos');
-        
-//         tabela.innerHTML = equipamentos.map(eq => `
-//             <tr>
-//                 <td><strong>${eq.name}</strong></td>
-//                 <td>${eq.responsible_id ? 'ID do Usuário: ' + eq.responsible_id : '<span style="color:#e74c3c;">Sem responsável</span>'}</td>
-//                 <td><span style="color: #27ae60; font-weight: bold;">Ativo</span></td>
-//                 <td>
-//                     <button onclick="removerEquipamento(${eq.id})" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;" title="Remover Equipamento">🗑️</button>
-//                 </td>
-//             </tr>
-//         `).join('');
-//     } catch (erro) {
-//         console.error("Erro ao carregar equipamentos:", erro);
-//     }
-// }
-
 async function abrirModalEquipamento() {
     // Usamos um prompt simples para agilizar o cadastro sem precisar criar mais HTML
     const nome = prompt("Digite o nome do novo equipamento:");
@@ -508,10 +486,52 @@ async function editarUsuarioExterno(email, dataAtual) {
     }
 }
 
+// Função que valida a sessão antes de carregar qualquer coisa
+async function verificarSessao() {
+    const userId = localStorage.getItem('user_id');
 
-async function montarPagina() {
-    await carregarMenu(); 
-    console.log("Sistema em modo de acesso aberto.");
+    // 1. Usuário não logado (sem ID no localStorage)
+    if (!userId) {
+        window.location.replace('/'); // Redireciona imediatamente
+        return false;
+    }
+
+    // 2. Verifica no backend o status atual do usuário no banco
+    try {
+        const res = await fetch(`/api/verificar-acesso/${userId}`);
+        
+        if (!res.ok) {
+            const erro = await res.json();
+            alert(erro.detail || "Acesso negado.");
+            localStorage.clear(); // Destrói a sessão local
+            window.location.replace('/'); // Redireciona
+            return false;
+        }
+        
+        return true; // Sessão válida e status OK
+    } catch (error) {
+        console.error("Erro de conexão ao validar sessão:", error);
+        localStorage.clear();
+        window.location.replace('/');
+        return false;
+    }
 }
+
+// Inicialização segura da página
+async function montarPagina() {
+    // Para a execução de todo o resto se a sessão for inválida
+    const autorizado = await verificarSessao();
+    if (!autorizado) return;
+
+    // Se passou na segurança, mostra o dashboard e carrega os dados
+    document.querySelector('.dashboard-container').style.display = 'flex';
+    await carregarMenu(); 
+    console.log("Sistema em modo de acesso seguro. Autenticado.");
+}
+
+// async function montarPagina() {
+//     await carregarMenu(); 
+//     console.log("Sistema em modo de acesso aberto.");
+// }
 
 montarPagina();

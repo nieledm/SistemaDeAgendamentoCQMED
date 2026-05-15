@@ -8,6 +8,8 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
       # Conexão com o banco centralizado
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@host.docker.internal:5432/${DB_NAME}
