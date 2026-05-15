@@ -3,8 +3,8 @@ import ssl
 from ldap3 import Server, Connection, ALL, SIMPLE, Tls
 
 # Se for rodar fora do Docker, descomente as linhas abaixo para carregar o .env
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 def autenticar_e_obter_info(username, password):
     # Puxa as variáveis de ambiente, com valores padrão como fallback (opcional)

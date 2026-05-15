@@ -7,7 +7,6 @@ import io, os
 import time
 
 from . import models, database
-from .auth import autenticar_e_obter_info
 
 # Cria as tabelas ao iniciar
 models.Base.metadata.create_all(bind=database.engine)
