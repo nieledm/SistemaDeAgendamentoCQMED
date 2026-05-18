@@ -135,8 +135,7 @@ def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(dat
         models.Schedule.end_time > dados.start_time
     ).all()
 
-    # Se houver conflitos, você pode optar por deletar ou avisar. 
-    # Aqui, vamos remover para "limpar" o calendário para a manutenção:
+    # Se houver conflitos "limpamos" o calendário para a manutenção:
     for agendamento in conflitos:
         db.delete(agendamento)
 
@@ -145,7 +144,8 @@ def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(dat
         equipment_id=dados.equipment_id,
         start_time=dados.start_time,
         end_time=dados.end_time,
-        description=dados.description
+        description=dados.description,
+        created_user=dados.create_user
     )
     
     db.add(nova_manutencao)
@@ -157,12 +157,29 @@ def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(dat
         "msg": f"Equipamento {equip.name} colocado em manutenção. {len(conflitos)} agendamentos foram removidos."
     }
 
-@router.get("/api/manutencoes/{equipment_id}")
+@router.get("/api/manutencoes/{equipment_id}", response_model=list[schemas.MaintenanceResponse])
 def listar_manutencoes(equipment_id: int, db: Session = Depends(database.get_db)):
     # Retorna as manutenções para exibir no calendário (em vermelho)
-    return db.query(models.equipment_maintenances).filter(
-        models.equipment_maintenances.equipment_id == equipment_id
-    ).all()
+    return db.query(models.equipment_maintenances) \
+             .options(joinedload(models.equipment_maintenances.equipment))\
+             .filter(models.equipment_maintenances.equipment_id == equipment_id)\
+             .all()
+
+@router.get("/api/admin/manutencoes/todas")
+def listar_todas_manutencoes(
+    equipment_id: int | None = None,
+    db: Session = Depends(database.get_db)
+):
+    agora = datetime.now()
+    
+    query = db.query(models.equipment_maintenances)\
+              .options(joinedload(models.equipment_maintenances.equipment))\
+              .filter(models.equipment_maintenances.end_time >= agora)
+    
+    if equipment_id is not None:
+        query = query.filter(models.equipment_maintenances.equipment_id == equipment_id)
+        
+    return query.order_by(models.equipment_maintenances.start_time.asc()).all()
 
 @router.delete("/api/admin/manutencao/{maint_id}")
 def remover_manutencao(maint_id: int, db: Session = Depends(database.get_db)):

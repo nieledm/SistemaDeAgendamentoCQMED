@@ -40,3 +40,14 @@ class Schedule(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     user = relationship("User") 
     equipment = relationship("Equipment")
+
+class equipment_maintenances(Base):
+    __tablename__ = "equipment_maintenances"
+    id = Column(Integer, primary_key=True, index=True)
+    created_user = Column(Integer, ForeignKey("users.id"))
+    equipment_id = Column(Integer, ForeignKey("equipments.id"))
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    description = Column(String, nullable=True)
+    equipment = relationship("Equipment")
+    user = relationship("User")

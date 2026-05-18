@@ -32,8 +32,10 @@ async function carregarMenu() {
 
     const is_admin = localStorage.getItem('is_admin') === 'true';
     if (is_admin) {
-        document.getElementById('btnAdmin').style.display = 'block';
-        document.getElementById('btnResponsavel').style.display = 'block';
+        const elementoMenu = document.getElementById('btnAdmin');
+        if (elementoMenu) {
+            elementoMenu.style.display = 'block';
+        }
     }
 }
 
@@ -241,7 +243,6 @@ function voltarAoCalendario() {
     document.getElementById('calendar-container').style.display = 'block';
 }
 
-
 // #################################################################################
 // PAINEL DE ADMNISTRAÇÃO - VISÃO GERAL DE USUÁRIOS E EQUIPAMENTOS
 // #################################################################################
@@ -260,22 +261,6 @@ function abrirGestaoAdmin() {
     carregarDadosEquipamentosAdmin();
     carregarDadosUsuariosExternos();
 }
-
-// function mudarAbaAdmin(aba) {
-//     document.querySelectorAll('.conteudo-aba').forEach(el => el.style.display = 'none');
-//     document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
-    
-//     if (aba === 'equipamentos') {
-//         document.getElementById('abaEquipamentos').style.display = 'flex';
-//         event.target.classList.add('active'); // Destaca a aba clicada
-//     } else if (aba === 'usuarios') {
-//         document.getElementById('abaUsuarios').style.display = 'flex';
-//         event.target.classList.add('active'); // Destaca a aba clicada
-//     } else if (aba === 'manutencao') {
-//         document.getElementById('abaManutencao').style.display = 'flex';
-//         event.target.classList.add('active'); // Destaca a aba clicada
-//     }
-// }
 
 function mudarAbaAdmin(aba) {
     // Esconde todas as abas e apaga os botões ativos
@@ -566,9 +551,9 @@ async function verificarSessao() {
 
 async function carregarSelectEquipamentosManutencao() {
     try {
-        const response = await fetch('/api/equipamentos'); // Certifique-se de usar a sua rota existente que lista equipamentos
+        const response = await fetch('/api/equipamentos');
         const equipamentos = await response.json();
-        
+        equipamentos.sort((a, b) => a.name.localeCompare(b.name));
         const select = document.getElementById('maintEquipamentoId');
         select.innerHTML = '<option value="">Selecione um equipamento...</option>';
         
@@ -583,7 +568,6 @@ async function carregarSelectEquipamentosManutencao() {
     }
 }
 
-// 2. Envia os dados do formulário para a API de manutenção
 async function salvarManutencao(event) {
     event.preventDefault();
 
@@ -591,7 +575,8 @@ async function salvarManutencao(event) {
         equipment_id: parseInt(document.getElementById('maintEquipamentoId').value),
         start_time: document.getElementById('maintStartTime').value,
         end_time: document.getElementById('maintEndTime').value,
-        description: document.getElementById('maintDescription').value
+        description: document.getElementById('maintDescription').value,
+        create_user: parseInt(localStorage.getItem('user_id')) || 0
     };
 
     try {
@@ -611,7 +596,11 @@ async function salvarManutencao(event) {
             
             // Recarrega a tabela de manutenções e atualiza o calendário em segundo plano
             carregarTabelaManutencoes();
-            if (typeof calendar !== 'undefined') calendar.refetchEvents();
+            if (typeof calendar !== 'undefined' && calendar && typeof calendar.refetchEvents === 'function') {
+                calendar.refetchEvents();
+            } else {
+                console.warn("Calendário não estava pronto para atualizar as manutenções.");
+            }
         } else {
             alert("Erro: " + resultado.detail);
         }
@@ -621,29 +610,33 @@ async function salvarManutencao(event) {
     }
 }
 
-// 3. Busca e lista todas as manutenções ativas na tabela do painel
 async function carregarTabelaManutencoes() {
     const tbody = document.getElementById('tabelaAdminManutencoes');
     tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
 
     try {
-        // Como a rota criada puxa por ID, podemos criar uma rota genérica ou iterar. 
-        // Para simplificar, buscamos direto do equipamento selecionado no select ou criamos um endpoint geral.
-        // Se quiser listar de TODOS, o ideal é usar uma rota que liste globalmente.
-        // Aqui vamos buscar da rota genérica (caso queira ajustar no main.py depois para listar todas sem ID)
-        const equipId = document.getElementById('maintEquipamentoId').value;
-        if (!equipId) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#777;">Selecione um equipamento para ver o histórico ou gerenciar.</td></tr>';
-            return;
+        const selectEles = document.getElementById('maintEquipamentoId');
+        const equipId = selectEles ? selectEles.value : "";
+        
+        let url = '/api/admin/manutencoes/todas';
+        
+        if (equipId && equipId.trim() !== "") {
+            url += `?equipment_id=${parseInt(equipId)}`;
         }
 
-        const response = await fetch(`/api/manutencoes/${equipId}`);
+        const response = await fetch(url);
         const manutencoes = await response.json();
+
+        if (!Array.isArray(manutencoes)) {
+            console.error("O backend não retornou uma lista:", manutencoes);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro no formato dos dados retornados.</td></tr>`;
+            return;
+        }
 
         tbody.innerHTML = '';
 
         if (manutencoes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma manutenção agendada para este equipamento.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma manutenção agendada encontrada.</td></tr>';
             return;
         }
 
@@ -653,7 +646,7 @@ async function carregarTabelaManutencoes() {
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>Equipamento ID: ${mt.equipment_id}</strong></td>
+                <td><strong>${mt.equipment?.name || 'Sem Nome'}</strong></td>
                 <td>${dataInicio}</td>
                 <td>${dataFim}</td>
                 <td>${mt.description || '-'}</td>
@@ -671,15 +664,18 @@ async function carregarTabelaManutencoes() {
     }
 }
 
-// Extra: Adiciona um listener para atualizar a tabela assim que o admin mudar o equipamento no select
 document.addEventListener('DOMContentLoaded', () => {
     const selectMaint = document.getElementById('maintEquipamentoId');
     if (selectMaint) {
         selectMaint.addEventListener('change', carregarTabelaManutencoes);
     }
+    
+    // 🔥 CHAVE DO SUCESSO: Chama a função assim que a página carrega!
+    // Como o select vai iniciar vazio, ele vai trazer tudo automaticamente.
+    carregarTabelaManutencoes(); 
 });
 
-// 4. Deleta uma manutenção e libera o equipamento de volta no calendário
+
 async function deletarManutencao(id) {
     if (!confirm("Tem certeza que deseja encerrar/remover esta manutenção? O horário voltará a ficar disponível.")) return;
 
@@ -691,7 +687,11 @@ async function deletarManutencao(id) {
         if (response.ok) {
             alert("Manutenção removida!");
             carregarTabelaManutencoes();
-            if (typeof calendar !== 'undefined') calendar.refetchEvents(); // Recarrega o FullCalendar na tela
+            if (typeof calendar !== 'undefined' && calendar && typeof calendar.refetchEvents === 'function') {
+                calendar.refetchEvents();
+            } else {
+                console.warn("Calendário não estava pronto para atualizar as manutenções.");
+            }
         } else {
             alert("Erro ao remover manutenção.");
         }
@@ -700,7 +700,6 @@ async function deletarManutencao(id) {
     }
 }
 
-// Inicialização segura da página
 async function montarPagina() {
     // Para a execução de todo o resto se a sessão for inválida
     const autorizado = await verificarSessao();

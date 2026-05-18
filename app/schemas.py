@@ -65,6 +65,18 @@ class MaintenanceCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     description: Optional[str] = None
+    create_user: int
+
+class MaintenanceResponse(BaseModel):
+    id: int
+    description: str
+    start_time: datetime
+    end_time: datetime
+    # injetando schema do equipamento completo
+    equipment: EquipmentBase 
+
+    class Config:
+        from_attributes = True
 
 # ----- ADMIN -----
 class PermissionResponse(BaseModel):
