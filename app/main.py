@@ -25,7 +25,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-@app.get("/")
+@app.get("/", tags=["Rotas"])
 async def rota_inicial(request: Request):
     # O segredo é usar context={"request": request}
     return templates.TemplateResponse(
@@ -33,21 +33,21 @@ async def rota_inicial(request: Request):
         name="index.html"
     )
 
-@app.get("/login-interno")
+@app.get("/login-interno", tags=["Rotas"])
 async def tela_login_interno(request: Request):
     return templates.TemplateResponse(
         request=request, 
         name="login_interno.html"
     )
 
-@app.get("/login-externo")
+@app.get("/login-externo", tags=["Rotas"])
 async def tela_login_externo(request: Request):
     return templates.TemplateResponse(
         request=request, 
         name="login_externo.html"
     )
 
-@app.get("/dashboard")
+@app.get("/dashboard", tags=["Rotas"])
 async def tela_dashboard(request: Request):
     return templates.TemplateResponse(
         request=request,
@@ -59,7 +59,7 @@ async def tela_dashboard(request: Request):
 
 ####################### APIs ####################################
 
-@app.post("/api/importar-excel")
+@app.post("/api/importar-excel", tags=["Importar Excel"])
 async def importar_equipamentos_excel(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
     contents = await file.read()
     excel_data = pd.ExcelFile(io.BytesIO(contents))

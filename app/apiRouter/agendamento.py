@@ -6,7 +6,7 @@ from app import models, database, schemas
 
 router = APIRouter()
 
-@router.get("/api/equipamentos")
+@router.get("/api/equipamentos", tags=["agendamentos"])
 def listar_equipamentos(db: Session = Depends(database.get_db)):
     equipamentos = db.query(models.Equipment).all()
     return db.query(models.Equipment).all()
@@ -14,7 +14,7 @@ def listar_equipamentos(db: Session = Depends(database.get_db)):
 ###########################################
 # Rota de solicitação de agendamento de usuário externo
 
-@router.post("/api/agendar")
+@router.post("/api/agendar", tags=["agendamentos"])
 def criar_agendamento(agendamento: schemas.ScheduleCreate, db: Session = Depends(database.get_db)):
     usuario = db.query(models.User).filter(models.User.id == agendamento.user_id).first()
     equipamento = db.query(models.Equipment).filter(models.Equipment.id == agendamento.equipment_id).first()
@@ -54,12 +54,12 @@ def criar_agendamento(agendamento: schemas.ScheduleCreate, db: Session = Depends
 
 ###########################################################################
 # Rotas para meus agendamentos, cancelamento e edição
-@router.get("/api/meus-agendamentos/{user_id}")
+@router.get("/api/meus-agendamentos/{user_id}", tags=["agendamentos"])
 def listar_meus_agendamentos(user_id: int, db: Session = Depends(database.get_db)):
     agendamentos = db.query(models.Schedule).filter(models.Schedule.user_id == user_id).all()
     return agendamentos
 
-@router.delete("/api/agendamento/{schedule_id}")
+@router.delete("/api/agendamento/{schedule_id}", tags=["agendamentos"])
 def cancelar_agendamento(schedule_id: int, user_id: int, db: Session = Depends(database.get_db)):
     agendamento = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if not agendamento:
@@ -86,7 +86,7 @@ def cancelar_agendamento(schedule_id: int, user_id: int, db: Session = Depends(d
     return {"msg": "Agendamento removido com sucesso"}
 
 
-@router.put("/api/agendamento/{schedule_id}")
+@router.put("/api/agendamento/{schedule_id}", tags=["agendamentos"])
 def editar_agendamento(
     schedule_id: int, 
     dados: schemas.ScheduleUpdate,
@@ -160,7 +160,7 @@ def editar_agendamento(
 #         })
 #     return eventos
 
-@router.get("/api/eventos/{equipment_id}")
+@router.get("/api/eventos/{equipment_id}", tags=["agendamentos"])
 def listar_eventos(equipment_id: int, user_id: int, db: Session = Depends(database.get_db)):
     agendamentos = db.query(models.Schedule).filter(models.Schedule.equipment_id == equipment_id).all()
     # BUSCA AS MANUTENÇÕES TAMBÉM:

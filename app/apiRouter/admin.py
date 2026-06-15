@@ -7,7 +7,7 @@ from app import models, database, schemas
 
 router = APIRouter()
 
-@router.get("/api/admin/agendamentos-geral")
+@router.get("/api/admin/agendamentos-geral", tags=["Admin-Geral"])
 def listar_todos_agendamentos(db: Session = Depends(database.get_db)):
     # Retorna todos os agendamentos futuros com dados do usuário
     return db.query(models.Schedule)\
@@ -15,7 +15,7 @@ def listar_todos_agendamentos(db: Session = Depends(database.get_db)):
         .filter(models.Schedule.start_time >= datetime.utcnow())\
         .all()
 
-@router.get("/api/admin/monitorar-reservas")
+@router.get("/api/admin/monitorar-reservas", tags=["Admin-Geral"])
 def monitorar_reservas(db: Session = Depends(database.get_db)):
     # Retorna agendamentos futuros com dados do usuário e equipamento
     return db.query(models.Schedule)\
@@ -29,19 +29,19 @@ def monitorar_reservas(db: Session = Depends(database.get_db)):
 ##############################################################
 
 # --- OBTER USUÁRIOS DO AD ---
-@router.get("/api/admin/usuarios-internos")
+@router.get("/api/admin/usuarios-internos", tags=["Admin-Usuários_Internos"])
 def listar_usuarios_internos(db: Session = Depends(database.get_db)):
     # Retorna apenas os usuários que NÃO são externos (potenciais responsáveis)
     return db.query(models.User).filter(models.User.is_external == False).all()
 
 # --- GESTÃO DE EQUIPAMENTOS ---
 
-@router.get("/api/admin/equipamentos")
+@router.get("/api/admin/equipamentos", tags=["Admin-Equipamentos"])
 def listar_equipamentos_admin(db: Session = Depends(database.get_db)):
     # Retorna a lista completa; o SQLAlchemy converte para JSON automaticamente no FastAPI
     return db.query(models.Equipment).all()
 
-@router.post("/api/admin/equipamentos", status_code=201)
+@router.post("/api/admin/equipamentos", status_code=201, tags=["Admin-Equipamentos"])
 def criar_equipamento(dados: schemas.EquipamentoCreate, db: Session = Depends(database.get_db)):
     novo_eq = models.Equipment(
         name=dados.name, 
@@ -52,7 +52,7 @@ def criar_equipamento(dados: schemas.EquipamentoCreate, db: Session = Depends(da
     db.refresh(novo_eq)
     return {"id": novo_eq.id, "message": "Equipamento adicionado"}
 
-@router.put("/api/admin/equipamento/{eq_id}")
+@router.put("/api/admin/equipamento/{eq_id}", tags=["Admin-Equipamentos"])
 def editar_equipamento(eq_id: int, dados: schemas.EquipamentoUpdate, db: Session = Depends(database.get_db)):
     eq = db.query(models.Equipment).filter(models.Equipment.id == eq_id).first()
     if not eq:
@@ -63,7 +63,7 @@ def editar_equipamento(eq_id: int, dados: schemas.EquipamentoUpdate, db: Session
     db.commit()
     return {"message": "Atualizado com sucesso"}
 
-@router.delete("/api/admin/equipamento/{eq_id}")
+@router.delete("/api/admin/equipamento/{eq_id}", tags=["Admin-Equipamentos"])
 def remover_equipamento(eq_id: int, db: Session = Depends(database.get_db)):
     eq = db.query(models.Equipment).filter(models.Equipment.id == eq_id).first()
     if not eq:
@@ -75,12 +75,12 @@ def remover_equipamento(eq_id: int, db: Session = Depends(database.get_db)):
 
 # --- GESTÃO DE USUÁRIOS EXTERNOS ---
 
-@router.get("/api/admin/usuarios-externos")
+@router.get("/api/admin/usuarios-externos", tags=["Admin-Usuários_Externos"])
 def listar_usuarios_externos(db: Session = Depends(database.get_db)):
     usuarios = db.query(models.User).filter(models.User.is_external == True).all()
     return usuarios
 
-@router.post("/api/admin/usuarios-externos")
+@router.post("/api/admin/usuarios-externos", tags=["Admin-Usuários_Externos"])
 def configurar_usuario_externo(dados: schemas.UsuarioExternoConfig, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username == dados.email).first()
     
@@ -99,7 +99,23 @@ def configurar_usuario_externo(dados: schemas.UsuarioExternoConfig, db: Session 
     
     return {"message": "Acesso externo configurado com sucesso"}
 
-@router.post("/api/admin/definir-responsavel")
+@router.delete("/api/admin/usuario-externo/{user_id}", tags=["Admin-Usuários_Externos"])
+def remover_usuario_externo(user_id: int, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_external == True).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário externo não encontrado")
+    
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "Usuário excluído com sucesso"}
+
+##############################################################
+# GESTÃO DE MANUTENÇÃO DE EQUIPAMENTOS
+##############################################################
+
+@router.post("/api/admin/definir-responsavel", tags=["Admin-Equipamentos"])
 def definir_responsavel(dados: schemas.AtribuirResponsavel, db: Session = Depends(database.get_db)):
     # 1. Busca o equipamento
     equip = db.query(models.Equipment).filter(models.Equipment.id == dados.equipment_id).first()
@@ -117,11 +133,7 @@ def definir_responsavel(dados: schemas.AtribuirResponsavel, db: Session = Depend
     
     return {"msg": f"Agora {user.username} é o responsável pelo equipamento {equip.name}"}
 
-##############################################################
-# GESTÃO DE MANUTENÇÃO DE EQUIPAMENTOS
-##############################################################
-
-@router.post("/api/admin/manutencao")
+@router.post("/api/admin/manutencao", tags=["Admin-manutencao"])
 def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(database.get_db)):
     # 1. Verificar se o equipamento existe
     equip = db.query(models.Equipment).filter(models.Equipment.id == dados.equipment_id).first()
@@ -157,7 +169,7 @@ def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(dat
         "msg": f"Equipamento {equip.name} colocado em manutenção. {len(conflitos)} agendamentos foram removidos."
     }
 
-@router.get("/api/manutencoes/{equipment_id}", response_model=list[schemas.MaintenanceResponse])
+@router.get("/api/manutencoes/{equipment_id}", response_model=list[schemas.MaintenanceResponse], tags=["Admin-manutencao"])
 def listar_manutencoes(equipment_id: int, db: Session = Depends(database.get_db)):
     # Retorna as manutenções para exibir no calendário (em vermelho)
     return db.query(models.equipment_maintenances) \
@@ -165,7 +177,7 @@ def listar_manutencoes(equipment_id: int, db: Session = Depends(database.get_db)
              .filter(models.equipment_maintenances.equipment_id == equipment_id)\
              .all()
 
-@router.get("/api/admin/manutencoes/todas")
+@router.get("/api/admin/manutencoes/todas", tags=["Admin-manutencao"])
 def listar_todas_manutencoes(
     equipment_id: int | None = None,
     db: Session = Depends(database.get_db)
@@ -181,7 +193,7 @@ def listar_todas_manutencoes(
         
     return query.order_by(models.equipment_maintenances.start_time.asc()).all()
 
-@router.delete("/api/admin/manutencao/{maint_id}")
+@router.delete("/api/admin/manutencao/{maint_id}", tags=["Admin-manutencao"])
 def remover_manutencao(maint_id: int, db: Session = Depends(database.get_db)):
     maint = db.query(models.equipment_maintenances).filter(models.equipment_maintenances.id == maint_id).first()
     if not maint:

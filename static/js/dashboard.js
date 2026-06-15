@@ -464,16 +464,99 @@ async function carregarDadosUsuariosExternos() {
         
         tabela.innerHTML = usuarios.map(u => `
             <tr>
-                <td><strong>${u.username}</strong></td> <!-- No main.py, o email é salvo como username -->
+                <td><strong>${u.username}</strong></td>
                 <td>${u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('pt-BR') : 'Sem Validade Configurada'}</td>
                 <td>${verificarValidade(u.expiration_date)}</td>
-                <td>
-                    <button onclick="editarUsuarioExterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;">✏️ Definir Validade</button>
+                <td style="display: flex; gap: 10px;">
+                    <button onclick="editarUsuarioExterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;" title="Alterar Validade">
+                        ✏️ Validade
+                    </button>
+                    
+                    <button onclick="desativarUsuarioExterno('${u.username}')" style="background: none; border: none; cursor: pointer; color: #f39c12; font-weight: bold;" title="Forçar expiração imediatamente">
+                        🚫 Desativar
+                    </button>
+                    
+                    <button onclick="excluirUsuarioExterno(${u.id})" style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;" title="Excluir definitivamente do banco">
+                        🗑️ Excluir
+                    </button>
                 </td>
             </tr>
         `).join('');
     } catch (erro) {
         console.error("Erro ao carregar usuários:", erro);
+    }
+}
+
+async function cadastrarUsuarioExterno() {
+    const email = document.getElementById('novoEmailExterno').value;
+    const validade = document.getElementById('novaValidadeExterna').value;
+
+    if (!email) {
+        alert("Por favor, digite o e-mail do usuário.");
+        return;
+    }
+
+    const payload = {
+        email: email,
+        // Se a data foi preenchida, converte para ISO, senão manda null
+        expiration_date: validade ? new Date(validade).toISOString() : null
+    };
+
+    const res = await fetch('/api/admin/usuarios-externos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        alert("Usuário externo cadastrado com sucesso!");
+        document.getElementById('novoEmailExterno').value = '';
+        document.getElementById('novaValidadeExterna').value = '';
+        carregarDadosUsuariosExternos(); // Atualiza a tabela
+    } else {
+        alert("Erro ao cadastrar usuário externo.");
+    }
+}
+
+async function desativarUsuarioExterno(email) {
+    if (!confirm(`Deseja revogar imediatamente o acesso de ${email}?`)) return;
+
+    // Define a validade para ontem para "Expirar" o acesso no mesmo momento
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+
+    const payload = {
+        email: email,
+        expiration_date: ontem.toISOString()
+    };
+
+    const res = await fetch('/api/admin/usuarios-externos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        alert("Acesso desativado!");
+        carregarDadosUsuariosExternos();
+    } else {
+        alert("Erro ao desativar usuário.");
+    }
+}
+
+async function excluirUsuarioExterno(id) {
+    if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE do banco de dados?")) return;
+
+    const res = await fetch(`/api/admin/usuario-externo/${id}`, {
+        method: 'DELETE'
+    });
+
+    if (res.ok) {
+        alert("Usuário excluído com sucesso!");
+        carregarDadosUsuariosExternos();
+    } else {
+        const erro = await res.json();
+        alert(erro.detail || "Erro ao excluir usuário.");
     }
 }
 

@@ -63,6 +63,15 @@
                 <!-- Aba 2: Usuários Externos e Validade -->
                 <div id="abaUsuarios" class="conteudo-aba" style="display: none;">
                     <h3>Controle de Acesso Externo</h3>
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                        <input type="email" id="novoEmailExterno" placeholder="E-mail do novo usuário" style="padding: 8px; width: 250px; border-radius: 4px; border: 1px solid #ccc;">
+                        <input type="date" id="novaValidadeExterna" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;" title="Data de validade (Opcional)">
+                        <button onclick="cadastrarUsuarioExterno()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ➕ Cadastrar
+                        </button>
+                    </div>
+
                     <div class="tabela-container">
                         <table class="tabela-gestao">
                             <thead>

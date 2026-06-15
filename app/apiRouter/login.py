@@ -8,7 +8,7 @@ import datetime
 router = APIRouter()
 
 
-@router.post("/api/login-interno")
+@router.post("/api/login-interno", tags=["Login"])
 def login_interno(dados: schemas.LoginInternoRequest, db: Session = Depends(database.get_db)):
     # 1. Tenta autenticar no AD
     info_ad = autenticar_e_obter_info(dados.username, dados.password)
@@ -22,14 +22,17 @@ def login_interno(dados: schemas.LoginInternoRequest, db: Session = Depends(data
     # Determina se é admin
     is_admin = False
     for grupo in info_ad.get("grupos", []):
-        if "admin" in grupo.lower() or "ti" in grupo.lower():
+        grupo_lower = grupo.lower()
+        if "adm" in grupo_lower:
             is_admin = True
-    if dados.username == "niele.mendes": is_admin = True
+            break
+    # if dados.username == "niele.mendes": is_admin = True
 
     if not user:
         user = models.User(
             username=dados.username,
-            full_name=info_ad["nome"],
+            # full_name=info_ad["nome"],
+            full_name=info_ad.get("nome", dados.username),  # Fallback para o username
             is_admin=is_admin,
             is_external=False # Usuário AD nunca é externo
         )
@@ -39,6 +42,7 @@ def login_interno(dados: schemas.LoginInternoRequest, db: Session = Depends(data
     else:
         # Atualiza o status de admin caso tenha mudado no AD
         user.is_admin = is_admin
+        user.full_name = info_ad.get("nome", user.full_name)
         db.commit()
 
     return {
@@ -49,7 +53,7 @@ def login_interno(dados: schemas.LoginInternoRequest, db: Session = Depends(data
     }
 
 
-@router.post("/api/login-externo")
+@router.post("/api/login-externo", tags=["Login"])
 def login_externo(dados: schemas.LoginExternoRequest, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username == dados.email).first()
     
@@ -72,7 +76,7 @@ def login_externo(dados: schemas.LoginExternoRequest, db: Session = Depends(data
         "is_external": user.is_external
     }
 
-@router.get("/api/verificar-acesso/{user_id}")
+@router.get("/api/verificar-acesso/{user_id}", tags=["Login"])
 def verificar_acesso(user_id: int, db: Session = Depends(database.get_db)):
     usuario = db.query(models.User).filter(models.User.id == user_id).first()
     
@@ -93,3 +97,22 @@ def verificar_acesso(user_id: int, db: Session = Depends(database.get_db)):
             )
 
     return {"status": "autorizado"}
+
+@router.post("/api/debug/ldap", tags=["Login", "Debug"])
+def debug_ldap(dados: schemas.LoginInternoRequest):
+    """
+    ROTA TEMPORÁRIA PARA DEBUG: 
+    Testa a conexão com o AD e retorna os dados brutos.
+    """
+    # Tenta autenticar no AD usando a sua função
+    info_ad = autenticar_e_obter_info(dados.username, dados.password)
+    
+    if not info_ad:
+        raise HTTPException(status_code=401, detail="Credenciais inválidas no AD")
+
+    # Retorna o dicionário EXATAMENTE como a função entregou
+    return {
+        "status": "sucesso",
+        "mensagem": "Estes são os dados puros retornados pelo AD:",
+        "dados_brutos": info_ad
+    }
