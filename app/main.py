@@ -2,14 +2,44 @@ from fastapi import FastAPI, Depends, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from passlib.context import CryptContext
 import pandas as pd
 import io, os
 import time
 
 from . import models, database
+from .database import SessionLocal
 
 # Cria as tabelas ao iniciar
 models.Base.metadata.create_all(bind=database.engine)
+
+# Configuração para criptografar a senha do modo local
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def criar_admin_inicial():
+    db = SessionLocal()
+    try:
+        # Verifica se já existe algum usuário no banco
+        usuario_existente = db.query(models.User).first()
+        
+        if not usuario_existente:
+            print("⏳ Inicializando sistema: Criando usuário Admin padrão...")
+            senha_criptografada = pwd_context.hash("admin123")
+            
+            novo_admin = models.User(
+                username="admin",
+                full_name="Administrador do Sistema",
+                is_admin=True,
+                hashed_password=senha_criptografada
+            )
+            db.add(novo_admin)
+            db.commit()
+            print("✅ Admin criado! Login: admin | Senha: admin123")
+    finally:
+        db.close()
+
+# Executa a verificação assim que a aplicação iniciar
+criar_admin_inicial()
 
 # Pega o caminho absoluto da pasta 'Agendamento' (um nível acima de onde este arquivo está)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

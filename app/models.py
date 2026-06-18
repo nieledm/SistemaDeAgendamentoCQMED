@@ -6,11 +6,12 @@ import datetime
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True) # ID do AD ou e-mail
+    username = Column(String, unique=True, index=True)
     full_name = Column(String)
     is_external = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)
     expiration_date = Column(DateTime, nullable=True)
+    is_admin = Column(Boolean, default=False)
+    hashed_password = Column(String, nullable=True)
 
 class Equipment(Base):
     __tablename__ = "equipments"

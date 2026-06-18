@@ -12,3 +12,4 @@ __pycache__/
 venv/
 .venv/
 teste_ldap.py
+reset_db.py
