@@ -1,5 +1,4 @@
 .env
-.env.*
 *.env
 docker-compose.override.yml
 *.log
