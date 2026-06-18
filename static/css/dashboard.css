@@ -14,7 +14,8 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    flex-shrink: 0;
+    /* flex-shrink: 0; */
+    height: 100vh;
 }
 
 .sidebar-header {
@@ -49,6 +50,50 @@
 
 .sidebar-header a:active {
     color: #c0392b !important;
+}
+
+.sidebar-footer {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.25);
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-ajuda {
+    background: transparent;
+    color: var(--cqmed-gold-main);
+    border: 1px solid var(--cqmed-gold-main);
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    width: 100%;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-ajuda:hover {
+    background: var(--cqmed-gold-main);
+    color: var(--cqmed-teal-dark);
+}
+
+.assinatura {
+    font-size: 0.75rem;
+    color: #a0b2b2;
+}
+
+.assinatura p {
+    font-size: 0.7rem;
+    color: #a0b2b2;
+    margin: 0 0 2px 0;
+}
+
+.assinatura strong {
+    color: white;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 /* Lista de Equipamentos (Menu Fixo) */

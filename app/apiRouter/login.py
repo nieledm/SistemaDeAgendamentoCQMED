@@ -27,6 +27,7 @@ def login_interno(dados: schemas.LoginInternoRequest, db: Session = Depends(data
             is_admin = True
             break
     # if dados.username == "niele.mendes": is_admin = True
+    if dados.username == "gabriel.valderrama": is_admin = True
 
     if not user:
         user = models.User(

@@ -243,6 +243,15 @@ function voltarAoCalendario() {
     document.getElementById('calendar-container').style.display = 'block';
 }
 
+// --- MODAL DE AJUDA E CRÉDITOS ---
+function abrirModalAjuda() {
+    document.getElementById('modalAjuda').style.display = 'block';
+}
+
+function fecharModalAjuda() {
+    document.getElementById('modalAjuda').style.display = 'none';
+}
+
 // #################################################################################
 // PAINEL DE ADMNISTRAÇÃO - VISÃO GERAL DE USUÁRIOS E EQUIPAMENTOS
 // #################################################################################

@@ -1,29 +1,35 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Agendamento CQMED</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 </head>
+
 <body>
     <div class="dashboard-container" style="display: none;">
         <div class="sidebar">
             <div class="sidebar-header">
                 <div> <strong id="userNameDisplay"></strong> | <a href="/">Sair</a></div>
             </div>
-            <div class="sidebar-menu" id="listaEquipamentos">
+            <div class="sidebar-menu" id="listaEquipamentos"></div>
+            <div class="sidebar-footer">
+                <button class="btn-ajuda" onclick="abrirModalAjuda()">Ajuda & Suporte</button>
+                <div class="assinatura">
+                    <p>Desenvolvido por <strong>Niele Mendes</strong></p>
                 </div>
+            </div>
         </div>
 
         <div class="main-content">
             <div class="top-bar">
                 <h2 id="tituloEquipamento">Selecione um equipamento</h2>
-                <img src="/static/images/cqmed_logo.png" 
-                        alt="Logo CQMED" 
-                        style="height: 45px; object-fit: contain;">
+                <img src="/static/images/cqmed_logo.png" alt="Logo CQMED" style="height: 45px; object-fit: contain;">
             </div>
             <div id="calendar-container">
                 <div id="calendar"></div>
@@ -31,9 +37,10 @@
             <!-- Painel de Gestão do Administrador -->
             <div id="painelAdmin" style="display: none; padding: 0px;">
                 <h2 style="color: var(--cqmed-teal-main);">🛡️ Painel de Controle Geral</h2>
-                
+
                 <!-- Navegação por Abas -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <div
+                    style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
                     <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
                     <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button>
                     <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button>
@@ -43,7 +50,8 @@
                 <div id="abaEquipamentos" class="conteudo-aba">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h3>Gerenciar Inventário</h3>
-                        <button class="btn-novo-equipamento" onclick="abrirModalEquipamento()">+ Novo Equipamento</button>
+                        <button class="btn-novo-equipamento" onclick="abrirModalEquipamento()">+ Novo
+                            Equipamento</button>
                     </div>
                     <div class="tabela-container">
                         <table class="tabela-gestao">
@@ -63,11 +71,16 @@
                 <!-- Aba 2: Usuários Externos e Validade -->
                 <div id="abaUsuarios" class="conteudo-aba" style="display: none;">
                     <h3>Controle de Acesso Externo</h3>
-                    
-                    <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                        <input type="email" id="novoEmailExterno" placeholder="E-mail do novo usuário" style="padding: 8px; width: 250px; border-radius: 4px; border: 1px solid #ccc;">
-                        <input type="date" id="novaValidadeExterna" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;" title="Data de validade (Opcional)">
-                        <button onclick="cadastrarUsuarioExterno()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+
+                    <div
+                        style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                        <input type="email" id="novoEmailExterno" placeholder="E-mail do novo usuário"
+                            style="padding: 8px; width: 250px; border-radius: 4px; border: 1px solid #ccc;">
+                        <input type="date" id="novaValidadeExterna"
+                            style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;"
+                            title="Data de validade (Opcional)">
+                        <button onclick="cadastrarUsuarioExterno()"
+                            style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
                             ➕ Cadastrar
                         </button>
                     </div>
@@ -92,26 +105,33 @@
                 <div id="abaManutencao" class="conteudo-aba" style="display: none;">
                     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start;">
                         <!-- Coluna do Formulário -->
-                        <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                        <div
+                            style="background: #f9f9f9; padding: 20px; border-radius: 6px; border-left: 4px solid #e74c3c;">
                             <form id="formMaintAdmin" onsubmit="salvarManutencao(event)">
                                 <div class="form-group">
                                     <label>Equipamento para manutenção</label>
-                                    <select id="maintEquipamentoId" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    <select id="maintEquipamentoId" required
+                                        style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Início do Bloqueio</label>
-                                    <input type="datetime-local" id="maintStartTime" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    <input type="datetime-local" id="maintStartTime" required
+                                        style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                                 </div>
                                 <div class="form-group">
                                     <label>Fim do Bloqueio</label>
-                                    <input type="datetime-local" id="maintEndTime" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    <input type="datetime-local" id="maintEndTime" required
+                                        style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                                 </div>
                                 <div class="form-group">
                                     <label>Motivo/Descrição</label>
-                                    <input type="text" id="maintDescription" placeholder="Ex: Calibração ou troca de peça" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                    <input type="text" id="maintDescription"
+                                        placeholder="Ex: Calibração ou troca de peça"
+                                        style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                                 </div>
-                                <button type="submit" style="width: 100%; background-color: #e74c3c; padding: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px;">
+                                <button type="submit"
+                                    style="width: 100%; background-color: #e74c3c; padding: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px;">
                                     Aplicar Bloqueio
                                 </button>
                             </form>
@@ -140,13 +160,49 @@
                 </div>
 
             </div>
-            
-           <!-- <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;"> -->
+
+            <!-- <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;"> -->
             <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;">
                 <button onclick="voltarAoCalendario()" class="btn-voltar">
                     ← Voltar ao Calendário
                 </button>
             </div>
+
+            <!-- ========================================== -->
+            <!-- Modal de Ajuda e Créditos -->
+            <!-- ========================================== -->
+            <div id="modalAjuda" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);">
+            <div class="modal-content" style="background: white; margin: 5vh auto; padding: 40px; width: 450px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main); text-align: center;">
+                
+                <div style="text-align: right;">
+                    <button type="button" onclick="fecharModalAjuda()" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
+                </div>
+                
+                <h2 style="color: var(--cqmed-teal-main); margin-top: 0;">PRECISA DE AJUDA?</h2>
+                <p style="color: #555; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+                    Se você encontrou algum problema no agendamento, sua conta expirou ou precisa de suporte técnico, entre em contato conosco.
+                </p>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 30px;">
+                    <strong>📧 E-mail de Suporte:</strong> <br>
+                    <span style="color: var(--cqmed-teal-main); font-weight: bold; user-select: all;">nieledm@gmail.com</span>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3 style="color: var(--cqmed-teal-main); margin-bottom: 10px;">👩‍💻 SOBRE O SISTEMA</h3>
+                <p style="color: #555; font-size: 0.9rem; line-height: 1.6;">
+                    Esta plataforma foi idealizada, desenhada e desenvolvida do zero por <strong style="color: var(--cqmed-teal-dark);">Niele Mendes</strong>, Administradora de Sistemas do CQMED. 
+                    <br><br>
+                    <em>Transformando necessidades científicas complexas em soluções web ágeis, seguras e modernas.</em>
+                </p>
+                
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px; padding-bottom: 10px;">
+                    <!-- <a href="https://linkedin.com/in/nieledm" target="_blank" style="color: white; background: #0077b5; padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">LinkedIn</a> -->
+                    <a href="https://github.com/nieledm" target="_blank" style="color: white; background: #333; padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">GitHub</a>
+                </div>
+            </div>
+        </div>
 
         </div>
     </div>
@@ -154,9 +210,7 @@
     <div id="modalForm">
         <div class="modal-content">
             <div style="text-align: right;">
-                <button type="button" onclick="fecharModal()"
-                        title="Fechar" 
-                        style="background:rgb(201, 198, 198);
+                <button type="button" onclick="fecharModal()" title="Fechar" style="background:rgb(201, 198, 198);
                                border: 2px solid black;
                                font-weight: bold; 
                                cursor: pointer;">
@@ -167,8 +221,8 @@
             <h3>Novo Agendamento</h3>
             <form id="agendamentoForm">
                 <!-- Para criar transformar o botão confirmar em editar quando clicar em um bloco existente de agendamento -->
-                <input type="hidden" id="editScheduleId"> 
-                
+                <input type="hidden" id="editScheduleId">
+
                 <input type="hidden" id="eqId">
                 <div class="form-group">
                     <label>Início (Data e Hora)</label>
@@ -179,52 +233,53 @@
                     <input type="datetime-local" id="endTime" required>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit"
-                            id="btnConfirmar" 
-                            class="btn-login">
+                    <button type="submit" id="btnConfirmar" class="btn-login">
                         Confirmar
                     </button>
-                    <button type="button" 
-                            class="btn-excluir" 
-                            id="btnExcluir" 
-                            onclick="excluirAgendamento()">
+                    <button type="button" class="btn-excluir" id="btnExcluir" onclick="excluirAgendamento()">
                         Excluir
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    
+
     <!-- Modal de Edição de Equipamento -->
-    <div id="modalEquipamento" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);">
-        <div class="modal-content" style="background: white; margin: 10% auto; padding: 30px; width: 400px; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main);">
+    <div id="modalEquipamento"
+        style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);">
+        <div class="modal-content"
+            style="background: white; margin: 10% auto; padding: 30px; width: 400px; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main);">
             <div style="text-align: right;">
-                <button type="button" onclick="fecharModalEquipamento()" title="Fechar" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
+                <button type="button" onclick="fecharModalEquipamento()" title="Fechar"
+                    style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
             </div>
-            
+
             <h3 style="color: var(--cqmed-teal-main);">Editar Equipamento</h3>
-            
+
             <input type="hidden" id="eqEditId">
-            
+
             <div class="form-group">
                 <label>Nome do Equipamento</label>
                 <input type="text" id="eqEditNome" required>
             </div>
-            
+
             <div class="form-group">
                 <label>Responsável Pelo Equipamento</label>
-                <select id="eqEditResponsavel" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <select id="eqEditResponsavel"
+                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                     <option value="">Sem responsável</option>
                     <!-- Opções preenchidas via JavaScript -->
                 </select>
             </div>
-            
+
             <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button onclick="salvarEdicaoEquipamento()" class="btn-interno" style="width: 100%; padding: 10px;">Salvar Alterações</button>
+                <button onclick="salvarEdicaoEquipamento()" class="btn-interno"
+                    style="width: 100%; padding: 10px;">Salvar Alterações</button>
             </div>
         </div>
     </div>
 
     <script src="/static/js/dashboard.js?v={{ version }}"></script>
 </body>
+
 </html>

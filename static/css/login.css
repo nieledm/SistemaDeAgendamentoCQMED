@@ -102,3 +102,60 @@ body {
 .btn-externo:hover { 
     background-color: #5a6268; 
 }
+
+/* --- Rodapé da Tela de Login --- */
+.login-footer {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: #b6b6b6; /* Cinza sutil para não brigar com o card principal */
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.login-footer p {
+    margin: 3px 0;
+}
+
+.login-footer a {
+    color: var(--cqmed-teal-main); 
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+.login-footer a:hover {
+    color: var(--cqmed-gold-main);
+    text-decoration: underline;
+}
+
+.login-footer strong {
+    color: var(--bg-page);
+    font-weight: 800;
+    /* text-transform: uppercase; */
+    letter-spacing: 0.5px;
+}
+
+
+/* Estilo do botão de Copiar E-mail */
+.btn-copiar {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 8px;
+    color: var(--text-dark);
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.btn-copiar:hover {
+    background: var(--cqmed-gold-main);
+    color: white;
+    border-color: var(--cqmed-gold-main);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
