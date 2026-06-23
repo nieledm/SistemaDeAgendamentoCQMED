@@ -7,11 +7,13 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=True)
     full_name = Column(String)
     is_external = Column(Boolean, default=False)
     expiration_date = Column(DateTime, nullable=True)
     is_admin = Column(Boolean, default=False)
     hashed_password = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
 
 class Equipment(Base):
     __tablename__ = "equipments"

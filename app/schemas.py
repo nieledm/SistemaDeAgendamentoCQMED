@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
-# ----- LOGIN -----
+# ----- LOGIN LDAP-----
 
 class LoginRequest(BaseModel):
     username: str
@@ -22,6 +22,13 @@ class UserBase(BaseModel):
     class Config:
         from_attributes = True
 
+# ----- LOGIN LOCAL -----
+
+class UsuarioInternoConfig(BaseModel):
+    username: str
+    expiration_date: Optional[datetime] = None
+    is_admin: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 # ----- AGENDAMENTO -----
 class ScheduleCreate(BaseModel):

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app import models, database, schemas, auth
 from app.database import get_db
 from app.auth import criar_token_jwt, autenticar_e_obter_info
@@ -89,13 +90,33 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # TRILHO 2: MODO LOCAL 
     # ---------------------------------------------------------
     elif auth_mode == "LOCAL":
-        user = db.query(models.User).filter(models.User.username == form_data.username).first()
+        # Procura na base de dados se o que foi digitado coincide com o 'username' OU com o 'email'
+        user = db.query(models.User).filter(
+            or_(
+                models.User.username == form_data.username,
+                models.User.email == form_data.username
+            )
+        ).first()
         
-        # Trocado para is None
         if user is None or not pwd_context.verify(form_data.password, str(user.hashed_password)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Usuário ou senha inválidos"
+                detail="Utilizador/E-mail ou senha incorretos."
+            )
+                   
+        # Trava 1: A conta está ativa?
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado: Sua conta encontra-se desativada."
+            )
+            
+        # Trava 2: O prazo expirou?
+        # Se 'expiration_date' existir (não for vitalício) E for menor que o momento atual
+        if user.expiration_date and user.expiration_date < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado: O seu período de validade expirou."
             )
             
     # ---------------------------------------------------------
@@ -146,23 +167,20 @@ def login_externo(dados: schemas.LoginExternoRequest, db: Session = Depends(data
 def verificar_acesso(user_id: int, db: Session = Depends(database.get_db)):
     usuario = db.query(models.User).filter(models.User.id == user_id).first()
     
-    # Ajustado para 'is None' para evitar o mesmo erro nesta linha
     if usuario is None: 
-        raise HTTPException(status_code=401, detail="Usuário não encontrado. Por favor, faça login novamente.")
+        raise HTTPException(status_code=401, detail="Usuário não encontrado.")
 
-    # Regra de bloqueio para usuários externos (Pendente ou Expirado)
-    if usuario.is_external is True: # O VS Code entende 'is True' perfeitamente
-        if usuario.expiration_date is None: # Trocado 'not' por 'is None'
-            raise HTTPException(
-                status_code=403, 
-                detail="Acesso bloqueado. Seu status está pendente de liberação pelo administrador."
-            )
-            
-        # O '# type: ignore' avisa o VS Code que nós sabemos o que estamos fazendo com essa data
+    # REGRA 1: O Admin desativou esse usuário manualmente?
+    if usuario.is_active is False:
+        raise HTTPException(status_code=403, detail="Sua conta foi desativada pelo administrador.")
+
+    # REGRA 2: O contrato/bolsa do usuário venceu? (Serve para externos e internos locais)
+    if usuario.expiration_date is not None:
         if usuario.expiration_date < datetime.utcnow():  # type: ignore
+            data_formatada = usuario.expiration_date.strftime('%d/%m/%Y')
             raise HTTPException(
                 status_code=403, 
-                detail=f"Acesso expirado. Sua validade encerrou em {usuario.expiration_date.strftime('%d/%m/%Y')}."
+                detail=f"Acesso expirado. Sua validade encerrou em {data_formatada}."
             )
 
     return {"status": "autorizado"}

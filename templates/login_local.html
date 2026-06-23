@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento CQMED - Acesso</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="login-card">
+        <img src="/static/images/cqmed_logo.png" 
+            alt="CQMED" 
+            style="max-width: 180px; margin-bottom: 20px; display: inline-block;">
+        
+        <h2 style="color: var(--cqmed-teal-main);">Acesso ao Sistema</h2>
+        <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px;">Faça login com o seu username ou e-mail</p>
+        
+        <form id="loginLocalForm">
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>Utilizador ou E-mail</label>
+                <input type="text" id="username" placeholder="Ex: nome.sobrenome ou e-mail" required style="text-align: center;">
+            </div>
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>Senha</label>
+                <input type="password" id="password" placeholder="A sua senha" required style="text-align: center;">
+            </div>
+            
+            <button type="submit" class="btn-login">Entrar</button>
+            <div id="error" class="error-msg" style="display: none;">Utilizador ou senha incorretos.</div>
+        </form>
+        
+        <div style="margin-top: 25px; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px;">
+            <p style="color: #7f8c8d; margin: 0;">Primeiro acesso?</p>
+            <a href="/registro" style="color: var(--cqmed-teal-main); font-weight: bold; text-decoration: none;">Crie a sua conta aqui</a>
+        </div>
+    <!-- </div>
+        <div class="login-footer">
+            <p style="margin-top: 15px;">Desenvolvido por <strong>Niele Mendes</strong></p>
+            <p>e-mail: <strong style="user-select: all;">niele.mendes@cqmed.com.br</strong></p>
+        </div>
+    </div> -->
+
+    <script src="/static/js/login.js?v=<?php echo time(); ?"></script>
+    <script>
+        // Continua a enviar os dados para a rota interna no modo unificado
+        document.getElementById('loginLocalForm').onsubmit = (e) => realizarLogin(e, 'interno');
+    </script>
+</body>
+</html>

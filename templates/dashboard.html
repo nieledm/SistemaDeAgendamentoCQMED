@@ -43,6 +43,12 @@
                     style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
                     <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
                     <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button>
+                    
+                    {% if auth_mode == 'LOCAL' %}
+                    <button class="btn-tab" onclick="mudarAbaAdmin('internos')">Usuários Internos</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('pendentes')">Usuários Pendentes</button>
+                    {% endif %}
+                    
                     <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button>
                 </div>
 
@@ -101,7 +107,6 @@
                 </div>
 
                 <!-- Aba 3: Manutenção -->
-
                 <div id="abaManutencao" class="conteudo-aba" style="display: none;">
                     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start;">
                         <!-- Coluna do Formulário -->
@@ -113,7 +118,7 @@
                                     <select id="maintEquipamentoId" required
                                         style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                                     </select>
-                                </div>
+                                </div>''
                                 <div class="form-group">
                                     <label>Início do Bloqueio</label>
                                     <input type="datetime-local" id="maintStartTime" required
@@ -158,6 +163,48 @@
                         </div>
                     </div>
                 </div>
+
+                {% if auth_mode == 'LOCAL' %}
+                <!-- Aba 4: Usuários Internos (Apenas para modo LOCAL) -->
+                <div id="abaInternos" class="conteudo-aba" style="display: none;">
+                    <h3>Gestão de Usuários Internos</h3>
+                    <div class="tabela-container">
+                        <table class="tabela-gestao">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Validade</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAdminInternos"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Aba 4: Usuários Pendentes (Apenas para modo LOCAL) -->
+                <div id="abaPendentes" class="conteudo-aba" style="display: none;">
+                    <h3>Aguardando Aprovação</h3>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">Analise os pré-cadastros antes de liberar o acesso ao sistema.</p>
+                    
+                    <div class="tabela-container">
+                        <table class="tabela-gestao">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Usuário / E-mail</th>
+                                    <th>Origem</th>
+                                    <th>Validade (Deixe em branco p/ vitalício)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAdminPendentes"></tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
 
             </div>
 

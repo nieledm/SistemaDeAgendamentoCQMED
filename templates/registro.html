@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento CQMED - Criar Conta</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/login.css">
+    <style>
+        /* Ajuste fino para o card de registro ficar um pouco mais largo */
+        .registro-card {
+            max-width: 450px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 20px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card registro-card">
+        <img src="/static/images/cqmed_logo.png" 
+            alt="CQMED" 
+            style="max-width: 150px; margin-bottom: 15px; display: inline-block;">
+        
+        <h2 style="color: var(--cqmed-teal-main);">Criar Conta</h2>
+        <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px;">Preencha os dados para solicitar acesso ao sistema</p>
+        
+        <form id="registroForm">
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>Nome Completo</label>
+                <input type="text" id="full_name" required style="text-align: left;">
+            </div>
+
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>E-mail (Institucional ou Pessoal)</label>
+                <input type="email" id="email" required style="text-align: left;">
+            </div>
+
+            <label class="checkbox-group">
+                <input type="checkbox" id="is_external" onchange="alternarCampoUsuario()">
+                <span>Sou parceiro externo</span>
+            </label>
+
+            <div class="form-group" id="div_username" style="color: var(--cqmed-teal-main);">
+                <label>Usuário de Rede</label>
+                <input type="text" id="username" placeholder="Ex: nome.sobrenome" required style="text-align: left;">
+            </div>
+
+            <div class="form-group" style="color: var(--cqmed-teal-main);">
+                <label>Senha de Acesso</label>
+                <input type="password" id="password" required style="text-align: left;" minlength="6">
+            </div>
+            
+            <button type="submit" class="btn-login" id="btn-submit">Solicitar Acesso</button>
+            
+            <div id="mensagem" style="display: none; margin-top: 15px; padding: 10px; border-radius: 5px; font-size: 0.9rem;"></div>
+        </form>
+        
+        <div style="margin-top: 20px; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px;">
+            <a href="/" style="color: #7f8c8d; text-decoration: none;">← Voltar para o Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Função para esconder/mostrar o campo "Usuário" baseado no checkbox
+        function alternarCampoUsuario() {
+            const isExternal = document.getElementById('is_external').checked;
+            const divUsername = document.getElementById('div_username');
+            const inputUsername = document.getElementById('username');
+
+            if (isExternal) {
+                divUsername.style.display = 'none';
+                inputUsername.removeAttribute('required');
+                inputUsername.value = ''; // Limpa o valor
+            } else {
+                divUsername.style.display = 'block';
+                inputUsername.setAttribute('required', 'required');
+            }
+        }
+
+        // Função que envia os dados para a API
+        document.getElementById('registroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btn-submit');
+            const mensagemDiv = document.getElementById('mensagem');
+            
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Aguarde...";
+            mensagemDiv.style.display = 'none';
+
+            // Monta o payload exatamente como o Pydantic espera
+            const payload = {
+                full_name: document.getElementById('full_name').value,
+                email: document.getElementById('email').value,
+                username: document.getElementById('username').value || document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                is_external: document.getElementById('is_external').checked
+            };
+
+            try {
+                const response = await fetch('/api/registro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mensagemDiv.style.display = 'block';
+                    mensagemDiv.style.backgroundColor = '#d4edda';
+                    mensagemDiv.style.color = '#155724';
+                    mensagemDiv.style.border = '1px solid #c3e6cb';
+                    mensagemDiv.innerText = data.mensagem;
+                    document.getElementById('registroForm').reset(); // Limpa o formulário
+                    alternarCampoUsuario(); // Reseta a interface
+                } else {
+                    mensagemDiv.style.display = 'block';
+                    mensagemDiv.style.backgroundColor = '#f8d7da';
+                    mensagemDiv.style.color = '#721c24';
+                    mensagemDiv.style.border = '1px solid #f5c6cb';
+                    // Mostra o erro retornado pelo FastAPI (detail)
+                    mensagemDiv.innerText = data.detail || "Erro ao tentar realizar o cadastro.";
+                }
+            } catch (error) {
+                mensagemDiv.style.display = 'block';
+                mensagemDiv.style.backgroundColor = '#f8d7da';
+                mensagemDiv.style.color = '#721c24';
+                mensagemDiv.innerText = "Erro de conexão com o servidor.";
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Solicitar Acesso";
+            }
+        });
+    </script>
+</body>
+</html>

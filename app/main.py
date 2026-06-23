@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import pandas as pd
@@ -55,13 +56,25 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-@app.get("/", tags=["Rotas"])
-async def rota_inicial(request: Request):
-    # O segredo é usar context={"request": request}
-    return templates.TemplateResponse(
-        request=request, 
-        name="index.html"
-    )
+# @app.get("/", tags=["Rotas"])
+# async def rota_inicial(request: Request):
+#     # O segredo é usar context={"request": request}
+#     return templates.TemplateResponse(
+#         request=request, 
+#         name="index.html"
+#     )
+
+@app.get("/", response_class=HTMLResponse)
+def pagina_inicial(request: Request):
+    # Lê o modo de autenticação do .env
+    auth_mode = os.getenv("AUTH_MODE", "LDAP").upper()
+    
+    if auth_mode == "LDAP":
+        # Retorna o seu ecrã original com a escolha entre Interno e Externo
+        return templates.TemplateResponse(request=request, name="index.html")
+    else:
+        # Retorna o novo ecrã unificado para o modo local
+        return templates.TemplateResponse(request=request, name="login_local.html")
 
 @app.get("/login-interno", tags=["Rotas"])
 async def tela_login_interno(request: Request):
@@ -79,12 +92,21 @@ async def tela_login_externo(request: Request):
 
 @app.get("/dashboard", tags=["Rotas"])
 async def tela_dashboard(request: Request):
+    auth_mode = os.getenv("AUTH_MODE", "LDAP").upper()
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
         context={
-            "version": time.time()
+            "version": time.time(),
+            "auth_mode": auth_mode
         }
+    )
+
+@app.get("/registro", response_class=HTMLResponse, tags=["Rotas"])
+def tela_de_registro(request: Request):
+    return templates.TemplateResponse(
+        request=request, 
+        name="registro.html"
     )
 
 ####################### APIs ####################################
@@ -132,3 +154,6 @@ app.include_router(admin_router.router)
 
 import app.apiRouter.agendamento as schedule_router
 app.include_router(schedule_router.router)
+
+import app.apiRouter.loginLocal as login_local_router
+app.include_router(login_local_router.router)
