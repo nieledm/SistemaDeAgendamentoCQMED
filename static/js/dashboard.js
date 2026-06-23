@@ -270,46 +270,6 @@ function abrirGestaoAdmin() {
     carregarDadosUsuariosExternos();
 }
 
-// function mudarAbaAdmin(aba) {
-//     // Esconde todas as abas e apaga os botões ativos
-//     document.getElementById('abaEquipamentos').style.display = 'none';
-//     document.getElementById('abaUsuarios').style.display = 'none';
-//     document.getElementById('abaManutencao').style.display = 'none';
-
-//     document.getElementById('aba' + aba.charAt(0).toUpperCase() + aba.slice(1)).style.display = 'block';
-//     // document.querySelectorAll('.conteudo-aba').forEach(el => el.style.display = 'none');
-//     // document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
-    
-//     const painelAdmin = document.getElementById('painelAdmin');
-//     const abaManutencao = document.getElementById('abaManutencao');
-
-//     // Destaca o botão da aba que foi clicada
-//     if (event && event.target) {
-//         event.target.classList.add('active'); 
-//     }
-    
-//     if (aba === 'equipamentos') {
-//         document.getElementById('abaEquipamentos').style.display = 'flex';
-        
-//         carregarDadosEquipamentosAdmin(); 
-        
-//     } else if (aba === 'usuarios') {
-//         document.getElementById('abaUsuarios').style.display = 'flex';
-        
-//         carregarDadosUsuariosExternos();
-        
-//     } else if (aba === 'manutencao') {
-//         document.getElementById('abaManutencao').style.display = 'flex';
-//         painelAdmin.style.height = (window.innerHeight - 70) + 'px';
-//         painelAdmin.style.overflowY = 'scroll';
-//         painelAdmin.style.display = 'block';
-//         abaManutencao.style.overflow = 'visible';
-        
-//         carregarSelectEquipamentosManutencao();
-//         carregarTabelaManutencoes();
-//     }
-// }
-
 function mudarAbaAdmin(aba) {
     // 1. Esconde todas as abas COM SEGURANÇA (Verifica se elas existem no HTML primeiro)
     const idAbas = ['abaEquipamentos', 'abaUsuarios', 'abaInternos', 'abaPendentes', 'abaManutencao'];
@@ -345,7 +305,7 @@ function mudarAbaAdmin(aba) {
         const abaEl = document.getElementById('abaPendentes');
         if (abaEl) { // Verificação de segurança
             abaEl.style.display = 'block';
-            carregarPendentes();
+            carregarDadosUsuariosPendentes();
         }
     } else if (aba === 'manutencao') {
         document.getElementById('abaManutencao').style.display = 'block';
@@ -520,7 +480,7 @@ async function carregarDadosUsuariosExternos() {
             <tr>
                 <td><strong>${u.username}</strong></td>
                 <td>${u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('pt-BR') : 'Sem Validade Configurada'}</td>
-                <td>${verificarValidade(u.expiration_date)}</td>
+                <td>${verificarStatusGeral(u.expiration_date, u.is_active)}</td>
                 <td style="display: flex; gap: 10px;">
                     <button onclick="editarUsuarioExterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;" title="Alterar Validade">
                         ✏️ Validade
@@ -614,15 +574,15 @@ async function excluirUsuarioExterno(id) {
     }
 }
 
-function verificarValidade(data) {
-    if (!data) return '<span style="color: #e67e22; font-weight: bold;">Pendente</span>';
+// function verificarValidade(data) {
+//     if (!data) return '<span style="color: #e67e22; font-weight: bold;">Pendente</span>';
     
-    const hoje = new Date();
-    const exp = new Date(data);
-    return exp < hoje 
-        ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
-        : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
-}
+//     const hoje = new Date();
+//     const exp = new Date(data);
+//     return exp < hoje 
+//         ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
+//         : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+// }
 
 async function editarUsuarioExterno(email, dataAtual) {
     // Facilita o preenchimento convertendo a data existente
@@ -649,6 +609,52 @@ async function editarUsuarioExterno(email, dataAtual) {
     } else {
         alert("Erro ao atualizar a data de validade.");
     }
+}
+
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES DE VERIFICAÇÃO
+// -----------------------------------------------------------------------------
+
+function verificarValidade(data, is_active) {
+    if (is_active === false) return '<span style="color: #e74c3c; font-weight: bold;">Desativado</span>';
+    if (!data || data === 'null') return '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+    
+    const hoje = new Date();
+    const exp = new Date(data);
+    return exp < hoje 
+        ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
+        : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+}
+
+// Checa apenas o Calendário (O prazo venceu?)
+function verificarStatusAcesso(data) {
+    if (!data || data === 'null') return '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+    
+    const hoje = new Date();
+    const exp = new Date(data);
+    return exp < hoje 
+        ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
+        : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+}
+
+// Checa apenas o Disjuntor da Conta (A conta está bloqueada no banco?)
+function verificarStatusAtivacao(is_active) {
+    return is_active === true
+        ? '<span style="color: #27ae60; font-weight: bold;">Ativo</span>'
+        : '<span style="color: #e74c3c; font-weight: bold;">Desativado</span>';
+}
+
+// Combina os dois para tabelas mais simples (Ex: Aba Externos)
+function verificarStatusGeral(data, is_active) {
+    if (is_active === false) return '<span style="color: #e74c3c; font-weight: bold;">Desativado</span>';
+    if (!data || data === 'null') return '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+    
+    const hoje = new Date();
+    const exp = new Date(data);
+    return exp < hoje 
+        ? '<span style="color: #f39c12; font-weight: bold;">Expirado</span>' 
+        : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
 }
 
 // Função que valida a sessão antes de carregar qualquer coisa
@@ -852,37 +858,6 @@ async function montarPagina() {
 // FUNÇÕES DA ABA: USUÁRIOS INTERNOS LOGIN LOCAL (SEM LDAP)
 // -----------------------------------------------------------------------------
 
-// async function carregarDadosUsuariosInternos() {
-//     try {
-//         const res = await fetch('/api/usuarios-internos');
-//         const usuarios = await res.json();
-//         const tabela = document.getElementById('tabelaAdminInternos');
-        
-//         tabela.innerHTML = usuarios.map(u => `
-//             <tr>
-//                 <td><strong>${u.username}</strong></td>
-//                 <td>${u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('pt-BR') : 'Sem Validade Configurada'}</td>
-//                 <td>${verificarValidade(u.expiration_date)}</td>
-//                 <td style="display: flex; gap: 10px;">
-//                     <button onclick="editarUsuarioInterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;" title="Alterar Validade">
-//                         ✏️ Validade
-//                     </button>
-                    
-//                     <button onclick="desativarUsuarioInterno('${u.username}')" style="background: none; border: none; cursor: pointer; color: #f39c12; font-weight: bold;" title="Forçar expiração imediatamente">
-//                         🚫 Desativar
-//                     </button>
-                    
-//                     <button onclick="excluirUsuarioInterno(${u.id})" style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;" title="Excluir definitivamente do banco">
-//                         🗑️ Excluir
-//                     </button>
-//                 </td>
-//             </tr>
-//         `).join('');
-//     } catch (erro) {
-//         console.error("Erro ao carregar usuários:", erro);
-//     }
-// }
-
 async function carregarDadosUsuariosInternos() {
     try {
         const res = await fetch('/api/usuarios-internos');
@@ -896,7 +871,7 @@ async function carregarDadosUsuariosInternos() {
                     ${u.is_admin ? '<span style="font-size:0.75rem; background:#8e44ad; color:white; padding:2px 6px; border-radius:10px; margin-left:8px; font-weight:bold;">🛡️ Admin</span>' : ''}
                 </td>
                 <td>${u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('pt-BR') : '<span style="color:#27ae60;">Vitalício</span>'}</td>
-                <td>${verificarValidadeInterno(u.expiration_date, u.is_active)}</td>
+                <td>${verificarStatusGeral(u.expiration_date, u.is_active)}</td>
                 <td style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="editarUsuarioInterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;" title="Alterar Validade">
                         ✏️ Validade
@@ -921,16 +896,150 @@ async function carregarDadosUsuariosInternos() {
     }
 }
 
-function verificarValidadeInterno(data, is_active) {
-    if (is_active === false) return '<span style="color: #e74c3c; font-weight: bold;">Desativado</span>';
-    if (!data || data === 'null') return '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+
+async function editarUsuarioInterno(username, dataAtual) {
+    const valorPadrao = dataAtual && dataAtual !== 'null' ? dataAtual.split('T')[0] : '';
     
-    const hoje = new Date();
-    const exp = new Date(data);
-    return exp < hoje 
-        ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
-        : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+    // O segredo está aqui: avisamos o admin que deixar vazio significa vitalício
+    const novaData = prompt(`Defina a data limite de acesso para ${username}\nDeixe EM BRANCO para acesso VITALÍCIO.\n(Formato: AAAA-MM-DD):`, valorPadrao);
+    
+    if (novaData === null) return; // Se clicou em cancelar
+
+    const payload = {
+        username: username,
+        // Se a string tem texto, envia a data. Se está vazia, envia 'null' para o banco.
+        expiration_date: novaData.trim() !== '' ? new Date(novaData).toISOString() : null
+    };
+
+    const res = await fetch('/api/usuarios-internos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        carregarDadosUsuariosInternos(); 
+    } else {
+        alert("Erro ao atualizar a data de validade.");
+    }
 }
+
+async function alternarAdminInterno(username, is_admin_atual) {
+    const novoStatus = !is_admin_atual;
+    const acao = novoStatus ? "CONCEDER" : "REMOVER";
+    
+    if (!confirm(`Deseja realmente ${acao} privilégios de Administrador para ${username}?`)) return;
+
+    const payload = {
+        username: username,
+        is_admin: novoStatus
+    };
+
+    const res = await fetch('/api/usuarios-internos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        carregarDadosUsuariosInternos();
+    } else {
+        alert("Erro ao alterar privilégios.");
+    }
+}
+
+async function alternarStatusInterno(username, is_active_atual) {
+    const novoStatus = !is_active_atual; // Se é falso vira verdadeiro, se é verdadeiro vira falso
+    const acao = novoStatus ? "ATIVAR" : "DESATIVAR";
+    
+    if (!confirm(`Deseja realmente ${acao} o acesso de ${username}?`)) return;
+
+    // Envia a ordem para o backend mudar o campo is_active
+    const payload = {
+        username: username,
+        is_active: novoStatus
+    };
+
+    const res = await fetch('/api/usuarios-internos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        carregarDadosUsuariosInternos(); // Atualiza a tela instantaneamente
+    } else {
+        alert("Erro ao alterar o status do usuário.");
+    }
+}
+
+async function excluirUsuarioInterno(id) {
+    if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE do banco de dados?")) return;
+
+    const res = await fetch(`/api/usuarios-internos/${id}`, {
+        method: 'DELETE'
+    });
+
+    if (res.ok) {
+        alert("Usuário excluído com sucesso!");
+        carregarDadosUsuariosInternos();
+    } else {
+        const erro = await res.json();
+        alert(erro.detail || "Erro ao excluir usuário.");
+    }
+}
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES DA ABA: USUÁRIOS PENDENTES LOGIN LOCAL (SEM LDAP)
+// -----------------------------------------------------------------------------
+
+async function carregarDadosUsuariosPendentes() {
+    try {
+        const res = await fetch('/api/usuarios-pendentes');
+        const usuarios = await res.json();
+        const tabela = document.getElementById('tabelaAdminPendentes');
+        
+        tabela.innerHTML = usuarios.map(u => `
+            <tr>
+                <td>
+                    <strong>${u.username}</strong>
+                </td>
+                <td>${u.email}</td>
+                <td>${u.is_external ? 'Externo' : 'Interno'}</td>
+                <td>${u.expiration_date ? new Date(u.expiration_date).toLocaleDateString('pt-BR') : '<span style="color:#27ae60;">Vitalício</span>'}</td>
+                <td>${verificarStatusAcesso(u.expiration_date)}</td>
+                <td>${verificarStatusAtivacao(u.is_active)}</td>
+                
+                <td style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="editarUsuarioInterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;" title="Alterar Validade">
+                        ✏️ Validade
+                    </button>
+                                        
+                    <button onclick="alternarStatusInterno('${u.username}', ${u.is_active})" style="background: none; border: none; cursor: pointer; color: ${u.is_active ? '#e74c3c' : '#27ae60'}; font-weight: bold;" title="Ativar/Desativar Usuário">
+                        ${u.is_active ? '🚫 Desativar' : '✅ Ativar'}
+                    </button>
+                    
+                    <button onclick="excluirUsuarioInterno(${u.id})" style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;" title="Excluir definitivamente do banco">
+                        🗑️ Excluir
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (erro) {
+        console.error("Erro ao carregar usuários:", erro);
+    }
+}
+
+// function verificarValidadeInterno(data, is_active) {
+//     if (is_active === false) return '<span style="color: #e74c3c; font-weight: bold;">Desativado</span>';
+//     if (!data || data === 'null') return '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+    
+//     const hoje = new Date();
+//     const exp = new Date(data);
+//     return exp < hoje 
+//         ? '<span style="color: #e74c3c; font-weight: bold;">Expirado</span>' 
+//         : '<span style="color: #27ae60; font-weight: bold;">Ativo</span>';
+// }
 
 async function editarUsuarioInterno(username, dataAtual) {
     const valorPadrao = dataAtual && dataAtual !== 'null' ? dataAtual.split('T')[0] : '';

@@ -46,7 +46,7 @@
                     
                     {% if auth_mode == 'LOCAL' %}
                     <button class="btn-tab" onclick="mudarAbaAdmin('internos')">Usuários Internos</button>
-                    <button class="btn-tab" onclick="mudarAbaAdmin('pendentes')">Usuários Pendentes</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('pendentes')">Usuários Desativados</button>
                     {% endif %}
                     
                     <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button>
@@ -193,9 +193,11 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
-                                    <th>Usuário / E-mail</th>
+                                    <th>E-mail</th>
                                     <th>Origem</th>
-                                    <th>Validade (Deixe em branco p/ vitalício)</th>
+                                    <th>Validade</th>
+                                    <th>Status de Acesso</th>
+                                    <th>Status de Ativação</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>

@@ -143,61 +143,6 @@ class DecisaoAprovacao(BaseModel):
     aprovar: bool
     expiration_date: Optional[datetime] = None # Opcional: Se omitido, o acesso é vitalício
 
-# 2. Rota para Listar Usuários Pendentes de Aprovação
-@router.get("/pendentes", response_model=List[UsuarioResponse], tags=["Gestão Local"])
-def listar_usuarios_pendentes(db: Session = Depends(get_db)):
-    # Trava de segurança: Se não for modo LOCAL, a gestão é feita pelo Active Directory
-    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Modo LDAP ativo. A gestão de utilizadores é feita no Active Directory."
-        )
-
-    # Procura todos os utilizadores que nasceram com is_active=False
-    usuarios_pendentes = db.query(models.User).filter(models.User.is_active == False).all()
-    return usuarios_pendentes
-
-# 3. Rota para Aprovar / Rejeitar um Utilizador
-@router.post("/{user_id}/decisao", tags=["Gestão Local"])
-def decidir_aprovacao(user_id: int, decisao: DecisaoAprovacao, db: Session = Depends(get_db)):
-    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Ação não permitida no modo LDAP."
-        )
-
-    usuario = db.query(models.User).filter(models.User.id == user_id).first()
-    
-    if usuario is None:
-        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-
-    if decisao.aprovar:
-        usuario.is_active = True
-        
-        # Se o admin passou uma data, grava. Se deixou em branco, fica None (Tempo Indeterminado)
-        usuario.expiration_date = decisao.expiration_date
-        db.commit()
-        
-        msg = "Utilizador aprovado com sucesso!"
-        if decisao.expiration_date:
-            data_formatada = decisao.expiration_date.strftime('%d/%m/%Y às %H:%M')
-            msg += f" Acesso válido até {data_formatada}."
-        else:
-            msg += " Acesso configurado por tempo indeterminado."
-            
-        return {"mensagem": msg}
-    else:
-        # Se rejeitar, remove o pré-registo do banco de dados de forma definitiva
-        db.delete(usuario)
-        db.commit()
-        return {"mensagem": "Registo rejeitado e removido do sistema."}
-
-# 4. Rota para Listar Todos os Utilizadores Ativos (Para fins de monitorização)
-@router.get("/ativos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
-def listar_usuarios_ativos(db: Session = Depends(get_db)):
-    usuarios_ativos = db.query(models.User).filter(models.User.is_active == True).all()
-    return usuarios_ativos
-
 # ----- USUÁRIOS INTERNOS (LOCAIS) -----
 
 # listar usuários internos (sem LDAP) - para fins de monitorização e gestão
@@ -212,27 +157,6 @@ def listar_usuarios_internos(db: Session = Depends(get_db)):
 
     listar_usuarios_internos = db.query(models.User).filter(models.User.is_external == False).all()
     return listar_usuarios_internos
-
-# @router.post("/api/usuarios-internos", tags=["Gestão Local"])
-# def configurar_usuario_interno(dados: schemas.UsuarioInternoConfig, db: Session = Depends(get_db)):
-#     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN, 
-#             detail="Modo LDAP ativo."
-#         )
-
-#     user = db.query(models.User).filter(
-#         models.User.username == dados.username, 
-#         models.User.is_external == False
-#     ).first()
-    
-#     if not user:
-#         raise HTTPException(status_code=404, detail="Usuário interno não encontrado")
-    
-#     user.expiration_date = dados.expiration_date
-#     db.commit()
-    
-#     return {"message": "Validade do usuário interno atualizada com sucesso"}
 
 @router.post("/api/usuarios-internos", tags=["Gestão Local"])
 def configurar_usuario_interno(dados: schemas.UsuarioInternoConfig, db: Session = Depends(get_db)):
@@ -281,3 +205,66 @@ def deletar_usuario_interno(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Usuário excluído com sucesso"}
+
+
+# ----- USUÁRIOS PENDENTES -----
+
+@router.get("/api/usuarios-pendentes", response_model=List[UsuarioResponse], tags=["Gestão Local"])
+def listar_usuarios_pendentes(db: Session = Depends(get_db)):
+    # Trava de segurança: Se não for modo LOCAL, a gestão é feita pelo Active Directory
+    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Modo LDAP ativo. A gestão de utilizadores é feita no Active Directory."
+        )
+
+    # Busca usuários onde (is_active é Falso) OU (a data de expiração existe e já passou)
+    usuarios_pendentes = db.query(models.User).filter(
+        or_(
+            models.User.is_active == False,
+            models.User.expiration_date < datetime.utcnow()
+        )
+    ).all()
+    return usuarios_pendentes
+
+# 3. Rota para Aprovar / Rejeitar um Utilizador
+@router.post("/api/usuarios-pendentes/{user_id}/decisao", tags=["Gestão Local"])
+def decidir_aprovacao(user_id: int, decisao: DecisaoAprovacao, db: Session = Depends(get_db)):
+    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Ação não permitida no modo LDAP."
+        )
+
+    usuario = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    if usuario is None:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+
+    if decisao.aprovar:
+        usuario.is_active = True
+        
+        # Se o admin passou uma data, grava. Se deixou em branco, fica None (Tempo Indeterminado)
+        usuario.expiration_date = decisao.expiration_date
+        db.commit()
+        
+        msg = "Utilizador aprovado com sucesso!"
+        if decisao.expiration_date:
+            data_formatada = decisao.expiration_date.strftime('%d/%m/%Y às %H:%M')
+            msg += f" Acesso válido até {data_formatada}."
+        else:
+            msg += " Acesso configurado por tempo indeterminado."
+            
+        return {"mensagem": msg}
+    else:
+        # Se rejeitar, remove o pré-registo do banco de dados de forma definitiva
+        db.delete(usuario)
+        db.commit()
+        return {"mensagem": "Registo rejeitado e removido do sistema."}
+
+# 4. Rota para Listar Todos os Utilizadores Ativos (Para fins de monitorização)
+@router.get("/ativos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
+def listar_usuarios_ativos(db: Session = Depends(get_db)):
+    usuarios_ativos = db.query(models.User).filter(models.User.is_active == True).all()
+    return usuarios_ativos
+
