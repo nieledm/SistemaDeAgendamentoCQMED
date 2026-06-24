@@ -19,8 +19,7 @@
             </div>
             <div class="sidebar-menu" id="listaEquipamentos"></div>
             <div class="sidebar-footer">
-                <!-- <button class="btn-ajuda" onclick="abrirModalAjuda()">Ajuda & Suporte</button> -->
-                <button class="btn-ajuda" id="btnAjuda">Ajuda & Suporte</button>
+                <button class="btn-ajuda" onclick="abrirModalAjuda()">Ajuda & Suporte</button>
                 <div class="assinatura">
                     <p>Desenvolvido por <strong>Niele Mendes</strong></p>
                 </div>
@@ -42,29 +41,22 @@
                 <!-- Navegação por Abas -->
                 <div
                     style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                    <!-- <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
-                    <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button> -->
-                    <button class="btn-tab active" data-aba="equipamentos">Equipamentos</button>
-                    <button class="btn-tab" data-aba="usuarios">Usuários Externos</button>
-
+                    <button class="btn-tab active" onclick="mudarAbaAdmin('equipamentos')">Equipamentos</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('usuarios')">Usuários Externos</button>
+                    
                     {% if auth_mode == 'LOCAL' %}
-                    <!-- <button class="btn-tab" onclick="mudarAbaAdmin('internos')">Usuários Internos</button>
-                    <button class="btn-tab" onclick="mudarAbaAdmin('pendentes')">Usuários Desativados</button> -->
-                    <button class="btn-tab" data-aba="internos">Usuários Internos</button>
-                    <button class="btn-tab" data-aba="pendentes">Usuários Desativados</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('internos')">Usuários Internos</button>
+                    <button class="btn-tab" onclick="mudarAbaAdmin('pendentes')">Usuários Desativados</button>
                     {% endif %}
-
-                    <!-- <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button> -->
-                    <button class="btn-tab" data-aba="manutencao">Manutenção</button>
+                    
+                    <button class="btn-tab" onclick="mudarAbaAdmin('manutencao')">Manutenção</button>
                 </div>
 
                 <!-- Aba 1: Gestão de Equipamentos -->
                 <div id="abaEquipamentos" class="conteudo-aba">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h3>Gerenciar Inventário</h3>
-                        <!-- <button class="btn-novo-equipamento" onclick="abrirModalEquipamento()">+ Novo
-                            Equipamento</button> -->
-                        <button class="btn-novo-equipamento" id="btnNovoEquipamento">+ Novo
+                        <button class="btn-novo-equipamento" onclick="abrirModalEquipamento()">+ Novo
                             Equipamento</button>
                     </div>
                     <div class="tabela-container">
@@ -93,11 +85,7 @@
                         <input type="date" id="novaValidadeExterna"
                             style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;"
                             title="Data de validade (Opcional)">
-                        <!-- <button onclick="cadastrarUsuarioExterno()"
-                            style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                            ➕ Cadastrar
-                        </button> -->
-                        <button id="btnCadastrarExterno"
+                        <button onclick="cadastrarUsuarioExterno()"
                             style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
                             ➕ Cadastrar
                         </button>
@@ -199,7 +187,7 @@
                 <div id="abaPendentes" class="conteudo-aba" style="display: none;">
                     <h3>Aguardando Aprovação</h3>
                     <p style="color: #7f8c8d; font-size: 0.9rem;">Analise os pré-cadastros antes de liberar o acesso ao sistema.</p>
-
+                    
                     <div class="tabela-container">
                         <table class="tabela-gestao">
                             <thead>
@@ -218,16 +206,13 @@
                     </div>
                 </div>
                 {% endif %}
-
+                
 
             </div>
 
             <!-- <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;"> -->
             <div id="botoesPainelAdmin" style="display: none; padding: 0 30px 30px 30px;">
-                <!-- <button onclick="voltarAoCalendario()" class="btn-voltar">
-                    ← Voltar ao Calendário
-                </button> -->
-                <button id="btnVoltarCalendario" class="btn-voltar">
+                <button onclick="voltarAoCalendario()" class="btn-voltar">
                     ← Voltar ao Calendário
                 </button>
             </div>
@@ -237,17 +222,16 @@
             <!-- ========================================== -->
             <div id="modalAjuda" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);">
             <div class="modal-content" style="background: white; margin: 5vh auto; padding: 40px; width: 450px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main); text-align: center;">
-
+                
                 <div style="text-align: right;">
-                    <!-- <button type="button" onclick="fecharModalAjuda()" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button> -->
-                    <button type="button" id="btnFecharAjuda" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
+                    <button type="button" onclick="fecharModalAjuda()" style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
                 </div>
-
+                
                 <h2 style="color: var(--cqmed-teal-main); margin-top: 0;">PRECISA DE AJUDA?</h2>
                 <p style="color: #555; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
                     Se você encontrou algum problema no agendamento, sua conta expirou ou precisa de suporte técnico, entre em contato conosco.
                 </p>
-
+                
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 30px;">
                     <strong>📧 E-mail de Suporte:</strong> <br>
                     <span style="color: var(--cqmed-teal-main); font-weight: bold; user-select: all;">nieledm@gmail.com</span>
@@ -257,11 +241,11 @@
 
                 <h3 style="color: var(--cqmed-teal-main); margin-bottom: 10px;">👩‍💻 SOBRE O SISTEMA</h3>
                 <p style="color: #555; font-size: 0.9rem; line-height: 1.6;">
-                    Esta plataforma foi idealizada, desenhada e desenvolvida do zero por <strong style="color: var(--cqmed-teal-dark);">Niele Mendes</strong>, Administradora de Sistemas do CQMED.
+                    Esta plataforma foi idealizada, desenhada e desenvolvida do zero por <strong style="color: var(--cqmed-teal-dark);">Niele Mendes</strong>, Administradora de Sistemas do CQMED. 
                     <br><br>
                     <em>Transformando necessidades científicas complexas em soluções web ágeis, seguras e modernas.</em>
                 </p>
-
+                
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px; padding-bottom: 10px;">
                     <!-- <a href="https://linkedin.com/in/nieledm" target="_blank" style="color: white; background: #0077b5; padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">LinkedIn</a> -->
                     <a href="https://github.com/nieledm" target="_blank" style="color: white; background: #333; padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">GitHub</a>
@@ -275,15 +259,9 @@
     <div id="modalForm">
         <div class="modal-content">
             <div style="text-align: right;">
-                <!-- <button type="button" onclick="fecharModal()" title="Fechar" style="background:rgb(201, 198, 198);
+                <button type="button" onclick="fecharModal()" title="Fechar" style="background:rgb(201, 198, 198);
                                border: 2px solid black;
-                               font-weight: bold;
-                               cursor: pointer;">
-                    X
-                </button> -->
-                <button type="button" id="btnFecharModalAgendamento" title="Fechar" style="background:rgb(201, 198, 198);
-                               border: 2px solid black;
-                               font-weight: bold;
+                               font-weight: bold; 
                                cursor: pointer;">
                     X
                 </button>
@@ -307,10 +285,7 @@
                     <button type="submit" id="btnConfirmar" class="btn-login">
                         Confirmar
                     </button>
-                    <!-- <button type="button" class="btn-excluir" id="btnExcluir" onclick="excluirAgendamento()">
-                        Excluir
-                    </button> -->
-                    <button type="button" class="btn-excluir" id="btnExcluir">
+                    <button type="button" class="btn-excluir" id="btnExcluir" onclick="excluirAgendamento()">
                         Excluir
                     </button>
                 </div>
@@ -324,9 +299,7 @@
         <div class="modal-content"
             style="background: white; margin: 10% auto; padding: 30px; width: 400px; border-radius: 8px; border-top: 5px solid var(--cqmed-gold-main);">
             <div style="text-align: right;">
-                <!-- <button type="button" onclick="fecharModalEquipamento()" title="Fechar"
-                    style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button> -->
-                <button type="button" id="btnFecharModalEquipamento" title="Fechar"
+                <button type="button" onclick="fecharModalEquipamento()" title="Fechar"
                     style="background:rgb(201, 198, 198); border: 2px solid black; font-weight: bold; cursor: pointer;">X</button>
             </div>
 
@@ -349,15 +322,13 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <!-- <button onclick="salvarEdicaoEquipamento()" class="btn-interno"
-                    style="width: 100%; padding: 10px;">Salvar Alterações</button> -->
-                <button id="btnSalvarEquipamento" class="btn-interno"
+                <button onclick="salvarEdicaoEquipamento()" class="btn-interno"
                     style="width: 100%; padding: 10px;">Salvar Alterações</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="/static/js/dashboard.js?v={{ version }}"></script>
+    <script src="/static/js/dashboard.js?v={{ version }}"></script>
 </body>
 
 </html>
