@@ -860,7 +860,7 @@ async function montarPagina() {
 
 async function carregarDadosUsuariosInternos() {
     try {
-        const res = await fetch('/api/usuarios-internos');
+        const res = await fetch('/api/admin/usuarios-internos');
         const usuarios = await res.json();
         const tabela = document.getElementById('tabelaAdminInternos');
         
@@ -911,7 +911,7 @@ async function editarUsuarioInterno(username, dataAtual) {
         expiration_date: novaData.trim() !== '' ? new Date(novaData).toISOString() : null
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -935,7 +935,7 @@ async function alternarAdminInterno(username, is_admin_atual) {
         is_admin: novoStatus
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -960,7 +960,7 @@ async function alternarStatusInterno(username, is_active_atual) {
         is_active: novoStatus
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -976,7 +976,7 @@ async function alternarStatusInterno(username, is_active_atual) {
 async function excluirUsuarioInterno(id) {
     if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE do banco de dados?")) return;
 
-    const res = await fetch(`/api/usuarios-internos/${id}`, {
+    const res = await fetch(`/api/admin/usuarios-internos/${id}`, {
         method: 'DELETE'
     });
 
@@ -995,7 +995,7 @@ async function excluirUsuarioInterno(id) {
 
 async function carregarDadosUsuariosPendentes() {
     try {
-        const res = await fetch('/api/usuarios-pendentes');
+        const res = await fetch('/api/local/usuarios-pendentes');
         const usuarios = await res.json();
         const tabela = document.getElementById('tabelaAdminPendentes');
         
@@ -1055,7 +1055,7 @@ async function editarUsuarioInterno(username, dataAtual) {
         expiration_date: novaData.trim() !== '' ? new Date(novaData).toISOString() : null
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1079,7 +1079,7 @@ async function alternarAdminInterno(username, is_admin_atual) {
         is_admin: novoStatus
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1104,7 +1104,7 @@ async function alternarAdminInterno(username, is_admin_atual) {
 //         expiration_date: ontem.toISOString()
 //     };
 
-//     const res = await fetch('/api/usuarios-internos', {
+//     const res = await fetch('/api/admin/usuarios-internos', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify(payload)
@@ -1130,7 +1130,7 @@ async function alternarStatusInterno(username, is_active_atual) {
         is_active: novoStatus
     };
 
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/admin/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1146,7 +1146,7 @@ async function alternarStatusInterno(username, is_active_atual) {
 async function excluirUsuarioInterno(id) {
     if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE do banco de dados?")) return;
 
-    const res = await fetch(`/api/usuarios-internos/${id}`, {
+    const res = await fetch(`/api/admin/usuarios-internos/${id}`, {
         method: 'DELETE'
     });
 
@@ -1172,7 +1172,7 @@ async function excluirUsuarioInterno(id) {
 //         expiration_date: new Date(novaData).toISOString()
 //     };
 
-//     const res = await fetch('/api/usuarios-internos', {
+//     const res = await fetch('/api/admin/usuarios-internos', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify(payload)

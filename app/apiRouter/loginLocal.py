@@ -22,32 +22,32 @@ class UsuarioCreate(BaseModel):
     is_admin: bool = False
     expiration_date: Optional[datetime] = None
 
-@router.post("/", tags=["Gestão de Usuários Login Local"])
-def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
-    # Trava de Segurança 1: Só permite se for modo LOCAL
-    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
-        raise HTTPException(status_code=403, detail="Gestão manual desabilitada. O sistema está usando LDAP.")
+# @router.post("/", tags=["Gestão de Usuários Login Local"])
+# def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
+#     # Trava de Segurança 1: Só permite se for modo LOCAL
+#     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
+#         raise HTTPException(status_code=403, detail="Gestão manual desabilitada. O sistema está usando LDAP.")
 
-    # Trava de Segurança 2: Verifica se o login já existe
-    usuario_existente = db.query(models.User).filter(models.User.username == usuario.username).first()
-    if usuario_existente is not None:
-        raise HTTPException(status_code=400, detail="Este nome de usuário já está em uso.")
+#     # Trava de Segurança 2: Verifica se o login já existe
+#     usuario_existente = db.query(models.User).filter(models.User.username == usuario.username).first()
+#     if usuario_existente is not None:
+#         raise HTTPException(status_code=400, detail="Este nome de usuário já está em uso.")
 
-    # Cria o usuário com a senha criptografada
-    novo_usuario = models.User(
-        username=usuario.username,
-        full_name=usuario.full_name,
-        hashed_password=pwd_context.hash(usuario.password),
-        is_admin=usuario.is_admin,
-        expiration_date=usuario.expiration_date,
-        is_active=True
-    )
-    db.add(novo_usuario)
-    db.commit()
+#     # Cria o usuário com a senha criptografada
+#     novo_usuario = models.User(
+#         username=usuario.username,
+#         full_name=usuario.full_name,
+#         hashed_password=pwd_context.hash(usuario.password),
+#         is_admin=usuario.is_admin,
+#         expiration_date=usuario.expiration_date,
+#         is_active=True
+#     )
+#     db.add(novo_usuario)
+#     db.commit()
     
-    return {"mensagem": "Usuário criado com sucesso!"}
+#     return {"mensagem": "Usuário criado com sucesso!"}
 
-@router.patch("/{user_id}/status", tags=["Gestão de Usuários Login Local"])
+@router.patch("/api/local/{user_id}/status", tags=["Gestão de Usuários Login Local"])
 def alternar_status_usuario(user_id: int, ativo: bool, db: Session = Depends(get_db)):
     # Rota para o Admin "Desativar" ou "Reativar" um usuário
     usuario = db.query(models.User).filter(models.User.id == user_id).first()
@@ -59,7 +59,7 @@ def alternar_status_usuario(user_id: int, ativo: bool, db: Session = Depends(get
     status_str = "ativado" if ativo else "desativado"
     return {"mensagem": f"Usuário {status_str} com sucesso."}
 
-@router.delete("/{user_id}", tags=["Gestão de Usuários Login Local"])
+@router.delete("/api/local/{user_id}", tags=["Gestão de Usuários Login Local"])
 def excluir_usuario(user_id: int, db: Session = Depends(get_db)):
     usuario = db.query(models.User).filter(models.User.id == user_id).first()
     if usuario is None:
@@ -82,7 +82,7 @@ class RegistroRequest(BaseModel):
     is_external: bool
 
 # 2. A Rota Pública de Cadastro
-@router.post("/api/registro", tags=["Autenticação Local"])
+@router.post("/api/local/registro", tags=["Autenticação Local"])
 def auto_cadastro(form: RegistroRequest, db: Session = Depends(get_db)):
     
     # Se for utilizador externo, forçamos o username a ser igual ao e-mail
@@ -146,7 +146,7 @@ class DecisaoAprovacao(BaseModel):
 # ----- USUÁRIOS INTERNOS (LOCAIS) -----
 
 # listar usuários internos (sem LDAP) - para fins de monitorização e gestão
-@router.get("/api/usuarios-internos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
+@router.get("/api/local/usuarios-internos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
 def listar_usuarios_internos(db: Session = Depends(get_db)):
     # Trava de segurança: Se não for modo LOCAL, a gestão é feita pelo Active Directory
     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
@@ -154,11 +154,20 @@ def listar_usuarios_internos(db: Session = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="Modo LDAP ativo. A gestão de utilizadores é feita no Active Directory."
         )
+# models.User.is_active == False,
+# models.User.expiration_date < datetime.utcnow()
+    usuarios = db.query(models.User).filter(
+        models.User.is_external == False, 
+        models.User.is_active == True,
+        or_(
+            models.User.expiration_date >= datetime.utcnow(),
+            models.User.expiration_date == None
+        ) 
+        
+        ).all()
+    return usuarios
 
-    listar_usuarios_internos = db.query(models.User).filter(models.User.is_external == False).all()
-    return listar_usuarios_internos
-
-@router.post("/api/usuarios-internos", tags=["Gestão Local"])
+@router.post("/api/local/usuarios-internos", tags=["Gestão Local"])
 def configurar_usuario_interno(dados: schemas.UsuarioInternoConfig, db: Session = Depends(get_db)):
     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
         raise HTTPException(status_code=403, detail="Modo LDAP ativo.")
@@ -171,21 +180,24 @@ def configurar_usuario_interno(dados: schemas.UsuarioInternoConfig, db: Session 
     if not user:
         raise HTTPException(status_code=404, detail="Usuário interno não encontrado")
     
-    # Se o frontend enviar null, isso grava nulo no banco (Acesso Vitalício)
-    user.expiration_date = dados.expiration_date
+    # Extrai APENAS os campos que o frontend efetivamente mandou no JSON
+    # Se você usar Pydantic v2, troque .dict() por .model_dump(exclude_unset=True)
+    update_data = dados.dict(exclude_unset=True)
     
-    # Atualiza admin e status somente se o botão do frontend enviou essa ordem
-    if dados.is_admin is not None:
-        user.is_admin = dados.is_admin
+    # Atualiza a data se ela foi enviada (mesmo que tenha sido enviada como null/None propositalmente)
+    if "expiration_date" in update_data:
+        user.expiration_date = update_data["expiration_date"]
         
-    if dados.is_active is not None:
-        user.is_active = dados.is_active
+    if "is_admin" in update_data:
+        user.is_admin = update_data["is_admin"]
+        
+    if "is_active" in update_data:
+        user.is_active = update_data["is_active"]
         
     db.commit()
     
     return {"message": "Configurações do usuário atualizadas"}
-
-@router.delete("/api/usuarios-internos/{user_id}", tags=["Gestão Local"])
+@router.delete("/api/local/usuarios-internos/{user_id}", tags=["Gestão Local"])
 def deletar_usuario_interno(user_id: int, db: Session = Depends(get_db)):
     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
         raise HTTPException(
@@ -207,9 +219,19 @@ def deletar_usuario_interno(user_id: int, db: Session = Depends(get_db)):
     return {"message": "Usuário excluído com sucesso"}
 
 
-# ----- USUÁRIOS PENDENTES -----
+# ----- USUÁRIOS EXTERNOS -----
+#  Rotas reaproveitadas do login local para gestão de usuários externos
+# -> Deletar usuário (/api/admin/usuario-externo/{user_id})
+# -> Listar usuários externos (/api/admin/usuarios-externos)
+# -> Configurar usuário externo (/api/admin/usuarios-externos)
+# -> Rota de ativação/desativação (/api/admin/status)
 
-@router.get("/api/usuarios-pendentes", response_model=List[UsuarioResponse], tags=["Gestão Local"])
+# ----- USUÁRIOS PENDENTES -----
+# Rotas reaproveitadas do login local para gestão de usuários pendentes
+# -> Rota de ativação/desativação (/api/admin/status)
+# -> Rota de exclusão (/api/admin/usuarios-pendentes/{user_id})
+
+@router.get("/api/local/usuarios-pendentes", response_model=List[UsuarioResponse], tags=["Gestão Local"])
 def listar_usuarios_pendentes(db: Session = Depends(get_db)):
     # Trava de segurança: Se não for modo LOCAL, a gestão é feita pelo Active Directory
     if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
@@ -227,43 +249,20 @@ def listar_usuarios_pendentes(db: Session = Depends(get_db)):
     ).all()
     return usuarios_pendentes
 
-# 3. Rota para Aprovar / Rejeitar um Utilizador
-@router.post("/api/usuarios-pendentes/{user_id}/decisao", tags=["Gestão Local"])
-def decidir_aprovacao(user_id: int, decisao: DecisaoAprovacao, db: Session = Depends(get_db)):
-    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Ação não permitida no modo LDAP."
-        )
 
-    usuario = db.query(models.User).filter(models.User.id == user_id).first()
+@router.delete("/api/local/usuario-pendente/{user_id}", tags=["Admin-Usuários_Externos"])
+def remover_usuario_externo(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_external == True).first()
     
-    if usuario is None:
-        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário externo não encontrado")
+    
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "Usuário excluído com sucesso"}
 
-    if decisao.aprovar:
-        usuario.is_active = True
-        
-        # Se o admin passou uma data, grava. Se deixou em branco, fica None (Tempo Indeterminado)
-        usuario.expiration_date = decisao.expiration_date
-        db.commit()
-        
-        msg = "Utilizador aprovado com sucesso!"
-        if decisao.expiration_date:
-            data_formatada = decisao.expiration_date.strftime('%d/%m/%Y às %H:%M')
-            msg += f" Acesso válido até {data_formatada}."
-        else:
-            msg += " Acesso configurado por tempo indeterminado."
-            
-        return {"mensagem": msg}
-    else:
-        # Se rejeitar, remove o pré-registo do banco de dados de forma definitiva
-        db.delete(usuario)
-        db.commit()
-        return {"mensagem": "Registo rejeitado e removido do sistema."}
-
-# 4. Rota para Listar Todos os Utilizadores Ativos (Para fins de monitorização)
-@router.get("/ativos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
+@router.get("/api/local/ativos", response_model=List[UsuarioResponse], tags=["Gestão Local"])
 def listar_usuarios_ativos(db: Session = Depends(get_db)):
     usuarios_ativos = db.query(models.User).filter(models.User.is_active == True).all()
     return usuarios_ativos

@@ -106,14 +106,12 @@ export async function editarUsuarioExterno(email, dataAtual) {
 }
 
 // ============================================================================
-// USUÁRIOS INTERNOS
+// USUÁRIOS INTERNOS ---- ESSAS ROTAS SÓ SERÃO USADAS EM LOGIN LOCAL (SEM LDAP)
 // ============================================================================
 export async function carregarDadosUsuariosInternos() {
     try {
-        const res = await fetch('/api/usuarios-internos');
+        const res = await fetch('/api/local/usuarios-internos');
         const usuarios = await res.json();
-        // Filtra só os ativos antes de desenhar a tabela!
-        // const usuariosAtivos = usuarios.filter(u => u.is_active === true);
         const tabela = document.getElementById('tabelaAdminInternos');
         
         // tabela.innerHTML = usuariosAtivos.map(u => `
@@ -141,7 +139,7 @@ export async function editarUsuarioInterno(username, dataAtual) {
     if (novaData === null) return; 
 
     const payload = { username: username, expiration_date: novaData.trim() !== '' ? new Date(novaData).toISOString() : null };
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/local/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -156,7 +154,7 @@ export async function alternarAdminInterno(username, is_admin_atual) {
     if (!confirm(`Deseja realmente ${novoStatus ? "CONCEDER" : "REMOVER"} privilégios de Administrador para ${username}?`)) return;
 
     const payload = { username: username, is_admin: novoStatus };
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/local/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -171,7 +169,7 @@ export async function alternarStatusInterno(username, is_active_atual) {
     if (!confirm(`Deseja realmente ${novoStatus ? "ATIVAR" : "DESATIVAR"} o acesso de ${username}?`)) return;
 
     const payload = { username: username, is_active: novoStatus };
-    const res = await fetch('/api/usuarios-internos', {
+    const res = await fetch('/api/local/usuarios-internos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -187,7 +185,7 @@ export async function alternarStatusInterno(username, is_active_atual) {
 
 export async function excluirUsuarioInterno(id) {
     if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE?")) return;
-    const res = await fetch(`/api/usuarios-internos/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/local/usuarios-internos/${id}`, { method: 'DELETE' });
 
     if (res.ok) {
         alert("Usuário excluído com sucesso!");
@@ -205,7 +203,7 @@ export async function excluirUsuarioInterno(id) {
 
 export async function carregarDadosUsuariosPendentes() {
     try {
-        const res = await fetch('/api/usuarios-pendentes');
+        const res = await fetch('/api/local/usuarios-pendentes');
         const usuarios = await res.json();
         const tabela = document.getElementById('tabelaAdminPendentes');
         
@@ -218,9 +216,9 @@ export async function carregarDadosUsuariosPendentes() {
                 <td>${verificarStatusAcesso(u.expiration_date)}</td>
                 <td>${verificarStatusAtivacao(u.is_active)}</td>
                 <td style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="editarUsuarioInterno('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;">✏️ Validade</button>
-                    <button onclick="alternarStatusInterno('${u.username}', ${u.is_active})" style="background: none; border: none; cursor: pointer; color: ${u.is_active ? '#e74c3c' : '#27ae60'}; font-weight: bold;">${u.is_active ? '🚫 Desativar' : '✅ Ativar'}</button>
-                    <button onclick="excluirUsuarioInterno(${u.id})" style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;">🗑️ Excluir</button>
+                    <button onclick="editarUsuarioPendente('${u.username}', '${u.expiration_date || ''}')" style="background: none; border: none; cursor: pointer; color: #2980b9; font-weight: bold;">✏️ Validade</button>
+                    <button onclick="alternarStatusPendentes('${u.username}', ${u.is_active})" style="background: none; border: none; cursor: pointer; color: ${u.is_active ? '#e74c3c' : '#27ae60'}; font-weight: bold;">${u.is_active ? '🚫 Desativar' : '✅ Ativar'}</button>
+                    <button onclick="excluirUsuarioPendente(${u.id})" style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;">🗑️ Excluir</button>
                 </td>
             </tr>
         `).join('');
@@ -229,11 +227,70 @@ export async function carregarDadosUsuariosPendentes() {
     }
 }
 
+export async function excluirUsuarioPendente(id) {
+    if (!confirm("Tem certeza que deseja excluir este usuário DE FORMA PERMANENTE?")) return;
+    const res = await fetch(`/api/admin/usuario-pendente/${id}`, { method: 'DELETE' });
+
+    if (res.ok) {
+        alert("Usuário excluído com sucesso!");
+        carregarDadosUsuariosPendentes();
+    } else {
+        const erro = await res.json();
+        alert(erro.detail || "Erro ao excluir usuário.");
+    }
+}
+
+export async function editarUsuarioPendente(email, dataAtual) {
+    const valorPadrao = dataAtual ? dataAtual.split('T')[0] : '';
+    const novaData = prompt(`Defina a data limite de acesso para ${email}\n(Formato: AAAA-MM-DD):`, valorPadrao);
+    if (!novaData) return; 
+
+    const payload = { email: email, expiration_date: new Date(novaData).toISOString() };
+    const res = await fetch('/api/admin/usuarios-pendentes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        carregarDadosUsuariosPendentes(); 
+    } else {
+        alert("Erro ao atualizar a data de validade.");
+    }
+}
+
+export async function alternarStatusPendentes(username, is_active_atual) {
+    const novoStatus = !is_active_atual; 
+    if (!confirm(`Deseja realmente ${novoStatus ? "ATIVAR" : "DESATIVAR"} o acesso de ${username}?`)) return;
+
+    const payload = { username: username, is_active: novoStatus };
+    const res = await fetch('/api/admin/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        carregarDadosUsuariosPendentes(); 
+    } else {
+        alert("Erro ao alterar o status do usuário.");
+    }
+}
+
 // Expõe as funções para os botões gerados nas strings de HTML
+// ----- Usuários externos -----
 window.editarUsuarioExterno = editarUsuarioExterno;
 window.desativarUsuarioExterno = desativarUsuarioExterno;
 window.excluirUsuarioExterno = excluirUsuarioExterno;
+
+// ----- Usuários internos -----
 window.editarUsuarioInterno = editarUsuarioInterno;
 window.alternarAdminInterno = alternarAdminInterno;
 window.alternarStatusInterno = alternarStatusInterno;
 window.excluirUsuarioInterno = excluirUsuarioInterno;
+
+// ----- Usuários pendentes -----
+window.editarUsuarioPendente = editarUsuarioPendente;
+window.alternarStatusPendentes = alternarStatusPendentes;
+window.excluirUsuarioPendente = excluirUsuarioPendente;
+window.alternarStatusPendentes = alternarStatusPendentes;

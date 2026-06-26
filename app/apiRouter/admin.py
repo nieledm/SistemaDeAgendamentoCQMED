@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from app import models, database, schemas
+from sqlalchemy import or_
+import os
 
 router = APIRouter()
 
@@ -30,9 +32,9 @@ def monitorar_reservas(db: Session = Depends(database.get_db)):
 
 # --- OBTER USUÁRIOS DO AD ---
 @router.get("/api/admin/usuarios-internos", tags=["Admin-Usuários_Internos"])
-def listar_usuarios_internos(db: Session = Depends(database.get_db)):
-    # Retorna apenas os usuários que NÃO são externos (potenciais responsáveis)
-    return db.query(models.User).filter(models.User.is_external == False).all()
+def listar_usuarios_ad(db: Session = Depends(database.get_db)):
+    usuarios = db.query(models.User).filter(models.User.is_external == False).all()
+    return usuarios
 
 # --- GESTÃO DE EQUIPAMENTOS ---
 
@@ -77,7 +79,17 @@ def remover_equipamento(eq_id: int, db: Session = Depends(database.get_db)):
 
 @router.get("/api/admin/usuarios-externos", tags=["Admin-Usuários_Externos"])
 def listar_usuarios_externos(db: Session = Depends(database.get_db)):
-    usuarios = db.query(models.User).filter(models.User.is_external == True).all()
+    if os.getenv("AUTH_MODE", "LDAP").upper() != "LOCAL":
+        usuarios = db.query(models.User).filter(models.User.is_external == True).all()
+    else: 
+        usuarios = db.query(models.User).filter(
+            models.User.is_external == True,
+            models.User.is_active == True,
+            or_(
+                models.User.expiration_date >= datetime.utcnow(),
+                models.User.expiration_date == None
+            ) 
+            ).all()
     return usuarios
 
 @router.post("/api/admin/usuarios-externos", tags=["Admin-Usuários_Externos"])
@@ -110,6 +122,53 @@ def remover_usuario_externo(user_id: int, db: Session = Depends(database.get_db)
     db.commit()
     
     return {"message": "Usuário excluído com sucesso"}
+
+
+@router.post("/api/admin/status", tags=["Admin-Usuários_Externos", "Admin-Usuários_Pendentes"])
+def configurar_status_usuarios(dados: schemas.UsuarioInternoConfig, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(
+        models.User.username == dados.username, 
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Se o frontend enviar null, isso grava nulo no banco (Acesso Vitalício)
+    user.expiration_date = dados.expiration_date
+    
+    if dados.is_active is not None:
+        user.is_active = dados.is_active
+        
+    db.commit()
+    
+    return {"message": "Configurações do usuário atualizadas"}
+
+# ---- usuários pendentes ----
+@router.delete("/api/admin/usuario-pendente/{user_id}", tags=["Admin-Usuários_Pendentes"])
+def remover_usuario_pendente(user_id: int, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(
+        models.User.id == user_id, 
+        or_(
+            models.User.is_active == False,
+            models.User.expiration_date < datetime.utcnow()
+        )).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário pendente não encontrado")
+    
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "Usuário excluído com sucesso"}
+
+@router.post("/api/admin/usuarios-pendentes", tags=["Admin-Pendentes"])
+def configurar_usuario_pendente(dados: schemas.UsuarioExternoConfig, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.username == dados.email).first()
+        
+    user.expiration_date = dados.expiration_date
+    db.commit()
+    
+    return {"message": "Acesso externo configurado com sucesso"}
 
 ##############################################################
 # GESTÃO DE MANUTENÇÃO DE EQUIPAMENTOS

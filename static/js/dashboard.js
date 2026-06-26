@@ -44,7 +44,10 @@ import {
     alternarAdminInterno,
     alternarStatusInterno,
     excluirUsuarioInterno,
-    carregarDadosUsuariosPendentes
+    carregarDadosUsuariosPendentes,
+    excluirUsuarioPendente,
+    editarUsuarioPendente,
+    alternarStatusPendentes,
 } from './dashboard_admin_usuarios.js';
 
 import {
