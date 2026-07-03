@@ -121,7 +121,10 @@ export async function carregarSelectEquipamentosManutencao() {
         const equipamentos = await response.json();
         equipamentos.sort((a, b) => a.name.localeCompare(b.name));
         const select = document.getElementById('maintEquipamentoId');
-        select.innerHTML = '<option value="">Selecione um equipamento...</option>';
+        select.innerHTML = `
+            <option value="">Selecione um equipamento...</option>
+            <option value="0" style="font-weight: bold; color: #e74c3c;">⚠️ TODOS OS EQUIPAMENTOS</option>
+        `;
         
         equipamentos.forEach(eq => {
             const option = document.createElement('option');
@@ -134,11 +137,44 @@ export async function carregarSelectEquipamentosManutencao() {
     }
 }
 
+// export async function salvarManutencao(event) {
+//     event.preventDefault();
+
+//     const dados = {
+//         equipment_id: parseInt(document.getElementById('maintEquipamentoId').value),
+//         start_time: document.getElementById('maintStartTime').value,
+//         end_time: document.getElementById('maintEndTime').value,
+//         description: document.getElementById('maintDescription').value,
+//         create_user: parseInt(localStorage.getItem('user_id')) || 0
+//     };
+
+//     const response = await fetch('/api/admin/manutencao', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(dados)
+//     });
+
+//     if (response.ok) {
+//         alert("Manutenção programada com sucesso!");
+//         document.getElementById('formMaintAdmin').reset();
+//         carregarTabelaManutencoes();
+//         // Dispara evento global para o calendário se atualizar
+//         window.dispatchEvent(new Event('atualizarCalendario'));
+//     } else {
+//         const resultado = await response.json();
+//         alert("Erro: " + resultado.detail);
+//     }
+// }
+
 export async function salvarManutencao(event) {
     event.preventDefault();
 
+    const equipValue = document.getElementById('maintEquipamentoId').value;
+    // Se for "todos" ou 0, passamos 0 para o backend
+    const equipId = (equipValue === 'todos' || equipValue === '0') ? 0 : parseInt(equipValue);
+
     const dados = {
-        equipment_id: parseInt(document.getElementById('maintEquipamentoId').value),
+        equipment_id: equipId,
         start_time: document.getElementById('maintStartTime').value,
         end_time: document.getElementById('maintEndTime').value,
         description: document.getElementById('maintDescription').value,
@@ -152,7 +188,8 @@ export async function salvarManutencao(event) {
     });
 
     if (response.ok) {
-        alert("Manutenção programada com sucesso!");
+        const resultado = await response.json();
+        alert(resultado.msg || "Manutenção programada com sucesso!");
         document.getElementById('formMaintAdmin').reset();
         carregarTabelaManutencoes();
         // Dispara evento global para o calendário se atualizar

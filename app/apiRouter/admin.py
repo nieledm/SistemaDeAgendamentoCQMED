@@ -192,41 +192,112 @@ def definir_responsavel(dados: schemas.AtribuirResponsavel, db: Session = Depend
     
     return {"msg": f"Agora {user.username} é o responsável pelo equipamento {equip.name}"}
 
+# @router.post("/api/admin/manutencao", tags=["Admin-manutencao"])
+# def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(database.get_db)):
+#     # 1. Verificar se o equipamento existe
+#     equip = db.query(models.Equipment).filter(models.Equipment.id == dados.equipment_id).first()
+#     if not equip:
+#         raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+
+#     # 2. Verificar se já existem agendamentos no período
+#     conflitos = db.query(models.Schedule).filter(
+#         models.Schedule.equipment_id == dados.equipment_id,
+#         models.Schedule.start_time < dados.end_time,
+#         models.Schedule.end_time > dados.start_time
+#     ).all()
+
+#     # Se houver conflitos "limpamos" o calendário para a manutenção:
+#     for agendamento in conflitos:
+#         db.delete(agendamento)
+
+#     # 3. Criar o registro de manutenção
+#     nova_manutencao = models.equipment_maintenances(
+#         equipment_id=dados.equipment_id,
+#         start_time=dados.start_time,
+#         end_time=dados.end_time,
+#         description=dados.description,
+#         created_user=dados.create_user
+#     )
+    
+#     db.add(nova_manutencao)
+#     db.commit()
+#     db.refresh(nova_manutencao)
+    
+#     return {
+#         "status": "sucesso", 
+#         "msg": f"Equipamento {equip.name} colocado em manutenção. {len(conflitos)} agendamentos foram removidos."
+#     }
+
 @router.post("/api/admin/manutencao", tags=["Admin-manutencao"])
 def criar_manutencao(dados: schemas.MaintenanceCreate, db: Session = Depends(database.get_db)):
-    # 1. Verificar se o equipamento existe
-    equip = db.query(models.Equipment).filter(models.Equipment.id == dados.equipment_id).first()
-    if not equip:
-        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    # --- LÓGICA PARA TODOS OS EQUIPAMENTOS ---
+    if dados.equipment_id == 0:
+        equipamentos = db.query(models.Equipment).all()
+        if not equipamentos:
+            raise HTTPException(status_code=404, detail="Nenhum equipamento cadastrado")
+        
+        total_conflitos = 0
+        for equip in equipamentos:
+            # 1. Verificar conflitos para este equipamento
+            conflitos = db.query(models.Schedule).filter(
+                models.Schedule.equipment_id == equip.id,
+                models.Schedule.start_time < dados.end_time,
+                models.Schedule.end_time > dados.start_time
+            ).all()
 
-    # 2. Verificar se já existem agendamentos no período
-    conflitos = db.query(models.Schedule).filter(
-        models.Schedule.equipment_id == dados.equipment_id,
-        models.Schedule.start_time < dados.end_time,
-        models.Schedule.end_time > dados.start_time
-    ).all()
+            for agendamento in conflitos:
+                db.delete(agendamento)
+                total_conflitos += 1
 
-    # Se houver conflitos "limpamos" o calendário para a manutenção:
-    for agendamento in conflitos:
-        db.delete(agendamento)
+            nova_manutencao = models.equipment_maintenances(
+                equipment_id=equip.id,
+                start_time=dados.start_time,
+                end_time=dados.end_time,
+                description=dados.description,
+                created_user=dados.create_user
+            )
+            db.add(nova_manutencao)
+            
+        db.commit()
+        return {
+            "status": "sucesso", 
+            "msg": f"Manutenção aplicada a TODOS os equipamentos ({len(equipamentos)}). {total_conflitos} agendamentos foram removidos."
+        }
 
-    # 3. Criar o registro de manutenção
-    nova_manutencao = models.equipment_maintenances(
-        equipment_id=dados.equipment_id,
-        start_time=dados.start_time,
-        end_time=dados.end_time,
-        description=dados.description,
-        created_user=dados.create_user
-    )
-    
-    db.add(nova_manutencao)
-    db.commit()
-    db.refresh(nova_manutencao)
-    
-    return {
-        "status": "sucesso", 
-        "msg": f"Equipamento {equip.name} colocado em manutenção. {len(conflitos)} agendamentos foram removidos."
-    }
+    # --- LÓGICA PARA 1 EQUIPAMENTO ---
+    else:
+        # Verificar se o equipamento existe
+        equip = db.query(models.Equipment).filter(models.Equipment.id == dados.equipment_id).first()
+        if not equip:
+            raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+
+        # Verificar se já existem agendamentos no período
+        conflitos = db.query(models.Schedule).filter(
+            models.Schedule.equipment_id == dados.equipment_id,
+            models.Schedule.start_time < dados.end_time,
+            models.Schedule.end_time > dados.start_time
+        ).all()
+
+        for agendamento in conflitos:
+            db.delete(agendamento)
+
+        # Criar o registro de manutenção
+        nova_manutencao = models.equipment_maintenances(
+            equipment_id=dados.equipment_id,
+            start_time=dados.start_time,
+            end_time=dados.end_time,
+            description=dados.description,
+            created_user=dados.create_user
+        )
+        
+        db.add(nova_manutencao)
+        db.commit()
+        db.refresh(nova_manutencao)
+        
+        return {
+            "status": "sucesso", 
+            "msg": f"Equipamento {equip.name} colocado em manutenção. {len(conflitos)} agendamentos foram removidos."
+        }
 
 @router.get("/api/manutencoes/{equipment_id}", response_model=list[schemas.MaintenanceResponse], tags=["Admin-manutencao"])
 def listar_manutencoes(equipment_id: int, db: Session = Depends(database.get_db)):
