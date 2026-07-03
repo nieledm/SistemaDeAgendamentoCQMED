@@ -5,8 +5,8 @@ from datetime import datetime, timedelta, timezone
 from ldap3 import Server, Connection, ALL, SIMPLE, Tls
 
 # Se for rodar fora do Docker, descomente as linhas abaixo para carregar o .env
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 # Lê a chave secreta do seu .env (fundamental para a segurança do token)
 SECRET_KEY = os.getenv("SECRET_KEY", "chave_secreta_padrao_para_desenvolvimento")

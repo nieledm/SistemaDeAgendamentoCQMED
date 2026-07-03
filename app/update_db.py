@@ -9,21 +9,30 @@ def atualizar_producao():
         try:
             conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR;"))
             conn.execute(text("CREATE UNIQUE INDEX ix_users_email ON users(email);"))
+            conn.commit() # Confirma só esse bloco
             print("✅ Coluna 'email' e índice criados com sucesso.")
         except Exception as e:
-            print(f"⚠️ A coluna 'email' já existe ou houve um erro: {e}")
+            conn.rollback() # Limpa o erro do banco para não travar os próximos
+            print(f"ℹ️ A coluna 'email' já existe.")
 
-        # 2. Adiciona a coluna is_active e garante que os usuários antigos continuem ativos
+        # 2. Adiciona a coluna is_active
         try:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;"))
-            # Atualiza quem já estava no banco para não perder o acesso
             conn.execute(text("UPDATE users SET is_active = TRUE WHERE is_active IS NULL;"))
+            conn.commit()
             print("✅ Coluna 'is_active' criada e usuários antigos atualizados para 'True'.")
         except Exception as e:
-            print(f"⚠️ A coluna 'is_active' já existe ou houve um erro: {e}")
+            conn.rollback()
+            print(f"ℹ️ A coluna 'is_active' já existe.")
 
-        # Confirma as alterações no banco
-        conn.commit()
+        # 3. Adiciona a coluna hashed_password para o sistema de autenticação
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN hashed_password VARCHAR;"))
+            conn.commit()
+            print("✅ Coluna 'hashed_password' criada com sucesso.")
+        except Exception as e:
+            conn.rollback()
+            print(f"ℹ️ A coluna 'hashed_password' já existe ou houve um erro: {e}")
     
     print("🚀 Atualização finalizada!")
 
