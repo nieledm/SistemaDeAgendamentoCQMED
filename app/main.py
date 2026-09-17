@@ -11,6 +11,9 @@ import time
 from . import models, database
 from .database import SessionLocal
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
+is_dev = ENVIRONMENT.strip() == "development"
+
 # Cria as tabelas ao iniciar
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -45,7 +48,11 @@ criar_admin_inicial()
 # Pega o caminho absoluto da pasta 'Agendamento' (um nível acima de onde este arquivo está)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-app = FastAPI()
+app = FastAPI(
+    docs_url="/docs" if is_dev else None,
+    redoc_url="/redoc" if is_dev else None,
+    openapi_url="/openapi.json" if is_dev else None,
+)
 
 
 ############################################################################
